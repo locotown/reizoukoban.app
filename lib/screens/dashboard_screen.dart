@@ -10,6 +10,9 @@ import '../constants/categories.dart';
 // Services
 import '../services/storage_service.dart';
 
+// Screens
+import 'help_screen.dart';
+
 // Widgets
 import '../widgets/mini_tag.dart';
 import '../widgets/sort_button.dart';
@@ -102,71 +105,89 @@ class _DashboardScreenState extends State<DashboardScreen>
         elevation: 0,
         backgroundColor: Colors.white,
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Image.asset(
-                  'assets/icons/app_icon.png',
-                  width: 32,
-                  height: 32,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  '冷蔵庫番',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2196F3).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.today,
-                          size: 12, color: Color(0xFF2196F3)),
-                      const SizedBox(width: 4),
-                      Text(
-                        _getTodayString(),
-                        style: const TextStyle(
-                          color: Color(0xFF2196F3),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            Image.asset(
+              'assets/icons/app_icon.png',
+              width: 32,
+              height: 32,
             ),
-            Row(
-              children: [
-                if (_expiredCount > 0)
-                  MiniTag(
-                      icon: '🚨',
-                      count: _expiredCount,
-                      color: const Color(0xFFE53935)),
-                if (_expiredCount > 0) const SizedBox(width: 6),
-                if (_warningCount > 0)
-                  MiniTag(
-                      icon: '⚠️',
-                      count: _warningCount,
-                      color: const Color(0xFFFF9800)),
-                if (_warningCount > 0) const SizedBox(width: 6),
-                MiniTag(
-                    icon: '✅', count: _safeCount, color: const Color(0xFF4CAF50)),
-              ],
+            const SizedBox(width: 8),
+            const Text(
+              '冷蔵庫番',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A2E),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.today,
+                      size: 11, color: Color(0xFF2196F3)),
+                  const SizedBox(width: 3),
+                  Text(
+                    _getTodayString(),
+                    style: const TextStyle(
+                      color: Color(0xFF2196F3),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+        actions: [
+          // ヘルプボタン
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HelpScreen()),
+              );
+            },
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.help_outline, size: 18, color: Color(0xFF2196F3)),
+            ),
+          ),
+          // ステータスタグ
+          if (_expiredCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: MiniTag(
+                  icon: '🚨',
+                  count: _expiredCount,
+                  color: const Color(0xFFE53935)),
+            ),
+          if (_warningCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: MiniTag(
+                  icon: '⚠️',
+                  count: _warningCount,
+                  color: const Color(0xFFFF9800)),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: MiniTag(
+                icon: '✅', count: _safeCount, color: const Color(0xFF4CAF50)),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: const Color(0xFF2196F3),
