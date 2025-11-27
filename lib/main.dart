@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 // Models
 import 'models/food_item.dart';
 import 'models/food_template.dart';
+import 'models/stock_item.dart';
 
 // Services
 import 'services/storage_service.dart';
@@ -10,6 +11,7 @@ import 'services/storage_service.dart';
 // Screens
 import 'screens/dashboard_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/stock_screen.dart';
 
 void main() {
   runApp(const FreshAlertApp());
@@ -49,6 +51,7 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   List<FoodItem> _foods = [];
   List<FoodTemplate> _customTemplates = [];
+  List<StockItem> _stocks = [];
 
   @override
   void initState() {
@@ -60,6 +63,7 @@ class _MainNavigationState extends State<MainNavigation> {
     setState(() {
       _foods = StorageService.loadFoods();
       _customTemplates = StorageService.loadCustomTemplates();
+      _stocks = StorageService.loadStocks();
     });
   }
 
@@ -75,8 +79,17 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
 
+  void _updateStocks(List<StockItem> stocks) {
+    setState(() {
+      _stocks = stocks;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // 買い物が必要なアイテム数（バッジ用）
+    final needShoppingCount = _stocks.where((s) => s.needsToBuy).length;
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -90,6 +103,10 @@ class _MainNavigationState extends State<MainNavigation> {
             customTemplates: _customTemplates,
             onFoodsChanged: _updateFoods,
             onTemplatesChanged: _updateCustomTemplates,
+          ),
+          StockScreen(
+            stocks: _stocks,
+            onStocksChanged: _updateStocks,
           ),
         ],
       ),
@@ -112,6 +129,7 @@ class _MainNavigationState extends State<MainNavigation> {
               children: [
                 _buildNavItem(0, Icons.home_rounded, 'ホーム'),
                 _buildNavItem(1, Icons.add_circle_outline, '登録'),
+                _buildNavItemWithBadge(2, Icons.shopping_cart_outlined, 'ストック', needShoppingCount),
               ],
             ),
           ),
@@ -125,7 +143,7 @@ class _MainNavigationState extends State<MainNavigation> {
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF2196F3).withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -137,6 +155,66 @@ class _MainNavigationState extends State<MainNavigation> {
               icon,
               color: isSelected ? const Color(0xFF2196F3) : Colors.grey,
               size: 26,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF2196F3) : Colors.grey,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItemWithBadge(int index, IconData icon, String label, int badgeCount) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2196F3).withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? const Color(0xFF2196F3) : Colors.grey,
+                  size: 26,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -8,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE53935),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 18),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
