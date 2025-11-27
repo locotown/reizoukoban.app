@@ -3,11 +3,14 @@
     "short_name": "冷蔵庫番",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
+    "background_color": "#2196F3",
+    "theme_color": "#2196F3",
     "description": "食品の賞味期限を管理するアプリ",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "scope": ".",
+    "lang": "ja",
+    "categories": ["lifestyle", "utilities"],
     "icons": [
         {
             "src": "icons/Icon-192.png",
