@@ -1,0 +1,2158 @@
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:html' as html;
+
+void main() {
+  runApp(const FreshAlertApp());
+}
+
+class FreshAlertApp extends StatelessWidget {
+  const FreshAlertApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '冷蔵庫番',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2196F3),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+        fontFamily: 'Roboto',
+      ),
+      home: const MainNavigation(),
+    );
+  }
+}
+
+// ===== メインナビゲーション =====
+
+class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
+  @override
+  State<MainNavigation> createState() => _MainNavigationState();
+}
+
+class _MainNavigationState extends State<MainNavigation> {
+  int _currentIndex = 0;
+  List<FoodItem> _foods = [];
+  List<FoodTemplate> _customTemplates = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
+    setState(() {
+      _foods = StorageService.loadFoods();
+      _customTemplates = StorageService.loadCustomTemplates();
+    });
+  }
+
+  void _updateFoods(List<FoodItem> foods) {
+    setState(() {
+      _foods = foods;
+    });
+  }
+
+  void _updateCustomTemplates(List<FoodTemplate> templates) {
+    setState(() {
+      _customTemplates = templates;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          DashboardScreen(
+            foods: _foods,
+            onFoodsChanged: _updateFoods,
+          ),
+          HomeScreen(
+            foods: _foods,
+            customTemplates: _customTemplates,
+            onFoodsChanged: _updateFoods,
+            onTemplatesChanged: _updateCustomTemplates,
+          ),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.home_rounded, 'ホーム'),
+                _buildNavItem(1, Icons.add_circle_outline, '登録'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2196F3).withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? const Color(0xFF2196F3) : Colors.grey,
+              size: 26,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF2196F3) : Colors.grey,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ===== データモデル（リレーション構造） =====
+
+class Category {
+  final String id;
+  final String name;
+  final String icon;
+  final Color color;
+
+  const Category({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+  });
+}
+
+// ===== サブカテゴリ（食材の種類別） =====
+
+class SubCategory {
+  final String id;
+  final String name;
+  final String icon;
+  final String parentCategoryId;  // リレーション: Category.id への外部キー
+
+  const SubCategory({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.parentCategoryId,
+  });
+}
+
+// ===== 食材テンプレート =====
+
+class FoodTemplate {
+  final String id;
+  final String name;
+  final String icon;
+  final String categoryId;
+  final String subCategoryId;  // リレーション: SubCategory.id への外部キー
+  final int defaultDays;
+
+  const FoodTemplate({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.categoryId,
+    required this.subCategoryId,
+    required this.defaultDays,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'icon': icon,
+    'categoryId': categoryId,
+    'subCategoryId': subCategoryId,
+    'defaultDays': defaultDays,
+  };
+
+  factory FoodTemplate.fromJson(Map<String, dynamic> json) => FoodTemplate(
+    id: json['id'],
+    name: json['name'],
+    icon: json['icon'],
+    categoryId: json['categoryId'],
+    subCategoryId: json['subCategoryId'] ?? 'other',
+    defaultDays: json['defaultDays'],
+  );
+}
+
+// ===== 定数: カテゴリマスタ =====
+
+const List<Category> defaultCategories = [
+  Category(id: 'refrigerated', name: '冷蔵', icon: '🥬', color: Color(0xFF4CAF50)),
+  Category(id: 'frozen', name: '冷凍', icon: '🧊', color: Color(0xFF2196F3)),
+  Category(id: 'pantry', name: '常温', icon: '🥫', color: Color(0xFFFF9800)),
+];
+
+// ===== 定数: サブカテゴリマスタ =====
+
+const List<SubCategory> defaultSubCategories = [
+  // 冷蔵
+  SubCategory(id: 'meat', name: '肉類', icon: '🥩', parentCategoryId: 'refrigerated'),
+  SubCategory(id: 'fish', name: '魚介類', icon: '🐟', parentCategoryId: 'refrigerated'),
+  SubCategory(id: 'vegetable', name: '野菜', icon: '🥬', parentCategoryId: 'refrigerated'),
+  SubCategory(id: 'fruit', name: 'フルーツ', icon: '🍎', parentCategoryId: 'refrigerated'),
+  SubCategory(id: 'dairy', name: '乳製品', icon: '🥛', parentCategoryId: 'refrigerated'),
+  SubCategory(id: 'other_ref', name: 'その他', icon: '🍱', parentCategoryId: 'refrigerated'),
+  // 冷凍
+  SubCategory(id: 'frozen_meat', name: '冷凍肉', icon: '🍖', parentCategoryId: 'frozen'),
+  SubCategory(id: 'frozen_fish', name: '冷凍魚', icon: '🦐', parentCategoryId: 'frozen'),
+  SubCategory(id: 'frozen_veg', name: '冷凍野菜', icon: '🥦', parentCategoryId: 'frozen'),
+  SubCategory(id: 'frozen_meal', name: '冷凍食品', icon: '🍕', parentCategoryId: 'frozen'),
+  SubCategory(id: 'ice_cream', name: 'アイス', icon: '🍦', parentCategoryId: 'frozen'),
+  SubCategory(id: 'other_frozen', name: 'その他', icon: '📦', parentCategoryId: 'frozen'),
+  // 常温
+  SubCategory(id: 'bread', name: 'パン類', icon: '🍞', parentCategoryId: 'pantry'),
+  SubCategory(id: 'noodle', name: '麺類', icon: '🍜', parentCategoryId: 'pantry'),
+  SubCategory(id: 'canned', name: '缶詰・瓶詰', icon: '🥫', parentCategoryId: 'pantry'),
+  SubCategory(id: 'snack', name: 'お菓子', icon: '🍪', parentCategoryId: 'pantry'),
+  SubCategory(id: 'seasoning', name: '調味料', icon: '🧂', parentCategoryId: 'pantry'),
+  SubCategory(id: 'other_pantry', name: 'その他', icon: '🛒', parentCategoryId: 'pantry'),
+];
+
+// ===== プリセット食材テンプレート（細分化版） =====
+
+const List<FoodTemplate> defaultTemplates = [
+  // === 冷蔵 - 肉類 ===
+  FoodTemplate(id: 't1', name: '豚ロース', icon: '🥩', categoryId: 'refrigerated', subCategoryId: 'meat', defaultDays: 3),
+  FoodTemplate(id: 't2', name: '豚バラ', icon: '🥓', categoryId: 'refrigerated', subCategoryId: 'meat', defaultDays: 3),
+  FoodTemplate(id: 't3', name: '鶏もも', icon: '🍗', categoryId: 'refrigerated', subCategoryId: 'meat', defaultDays: 2),
+  FoodTemplate(id: 't4', name: '鶏むね', icon: '🍗', categoryId: 'refrigerated', subCategoryId: 'meat', defaultDays: 2),
+  FoodTemplate(id: 't5', name: '牛肉', icon: '🥩', categoryId: 'refrigerated', subCategoryId: 'meat', defaultDays: 3),
+  FoodTemplate(id: 't6', name: 'ひき肉', icon: '🍖', categoryId: 'refrigerated', subCategoryId: 'meat', defaultDays: 2),
+  FoodTemplate(id: 't7', name: 'ベーコン', icon: '🥓', categoryId: 'refrigerated', subCategoryId: 'meat', defaultDays: 7),
+  FoodTemplate(id: 't8', name: 'ハム', icon: '🍖', categoryId: 'refrigerated', subCategoryId: 'meat', defaultDays: 7),
+  
+  // === 冷蔵 - 魚介類 ===
+  FoodTemplate(id: 't9', name: '秋刀魚', icon: '🐟', categoryId: 'refrigerated', subCategoryId: 'fish', defaultDays: 2),
+  FoodTemplate(id: 't10', name: '鮭', icon: '🐟', categoryId: 'refrigerated', subCategoryId: 'fish', defaultDays: 2),
+  FoodTemplate(id: 't11', name: '鯖', icon: '🐟', categoryId: 'refrigerated', subCategoryId: 'fish', defaultDays: 2),
+  FoodTemplate(id: 't12', name: 'マグロ', icon: '🍣', categoryId: 'refrigerated', subCategoryId: 'fish', defaultDays: 1),
+  FoodTemplate(id: 't13', name: 'エビ', icon: '🦐', categoryId: 'refrigerated', subCategoryId: 'fish', defaultDays: 2),
+  FoodTemplate(id: 't14', name: 'イカ', icon: '🦑', categoryId: 'refrigerated', subCategoryId: 'fish', defaultDays: 2),
+  FoodTemplate(id: 't15', name: 'アサリ', icon: '🐚', categoryId: 'refrigerated', subCategoryId: 'fish', defaultDays: 1),
+  
+  // === 冷蔵 - 野菜 ===
+  FoodTemplate(id: 't16', name: 'キャベツ', icon: '🥬', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 7),
+  FoodTemplate(id: 't17', name: 'レタス', icon: '🥬', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 5),
+  FoodTemplate(id: 't18', name: '人参', icon: '🥕', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 14),
+  FoodTemplate(id: 't19', name: '玉ねぎ', icon: '🧅', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 30),
+  FoodTemplate(id: 't20', name: 'じゃがいも', icon: '🥔', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 21),
+  FoodTemplate(id: 't21', name: 'トマト', icon: '🍅', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 7),
+  FoodTemplate(id: 't22', name: 'きゅうり', icon: '🥒', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 5),
+  FoodTemplate(id: 't23', name: 'ほうれん草', icon: '🥬', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 3),
+  FoodTemplate(id: 't24', name: 'もやし', icon: '🌱', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 2),
+  FoodTemplate(id: 't25', name: 'ネギ', icon: '🧅', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 7),
+  FoodTemplate(id: 't26', name: 'ピーマン', icon: '🫑', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 7),
+  FoodTemplate(id: 't27', name: 'なす', icon: '🍆', categoryId: 'refrigerated', subCategoryId: 'vegetable', defaultDays: 5),
+  
+  // === 冷蔵 - フルーツ ===
+  FoodTemplate(id: 't28', name: 'りんご', icon: '🍎', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 14),
+  FoodTemplate(id: 't29', name: 'みかん', icon: '🍊', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 14),
+  FoodTemplate(id: 't30', name: 'バナナ', icon: '🍌', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 5),
+  FoodTemplate(id: 't31', name: 'いちご', icon: '🍓', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 3),
+  FoodTemplate(id: 't32', name: 'ぶどう', icon: '🍇', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 5),
+  FoodTemplate(id: 't33', name: 'キウイ', icon: '🥝', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 7),
+  FoodTemplate(id: 't34', name: 'レモン', icon: '🍋', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 21),
+  FoodTemplate(id: 't35', name: '桃', icon: '🍑', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 3),
+  FoodTemplate(id: 't36', name: 'メロン', icon: '🍈', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 5),
+  FoodTemplate(id: 't37', name: 'スイカ', icon: '🍉', categoryId: 'refrigerated', subCategoryId: 'fruit', defaultDays: 3),
+  
+  // === 冷蔵 - 乳製品 ===
+  FoodTemplate(id: 't38', name: '牛乳', icon: '🥛', categoryId: 'refrigerated', subCategoryId: 'dairy', defaultDays: 7),
+  FoodTemplate(id: 't39', name: '卵', icon: '🥚', categoryId: 'refrigerated', subCategoryId: 'dairy', defaultDays: 14),
+  FoodTemplate(id: 't40', name: 'ヨーグルト', icon: '🥣', categoryId: 'refrigerated', subCategoryId: 'dairy', defaultDays: 10),
+  FoodTemplate(id: 't41', name: 'チーズ', icon: '🧀', categoryId: 'refrigerated', subCategoryId: 'dairy', defaultDays: 21),
+  FoodTemplate(id: 't42', name: 'バター', icon: '🧈', categoryId: 'refrigerated', subCategoryId: 'dairy', defaultDays: 30),
+  FoodTemplate(id: 't43', name: '豆腐', icon: '🧈', categoryId: 'refrigerated', subCategoryId: 'dairy', defaultDays: 5),
+  FoodTemplate(id: 't44', name: '納豆', icon: '🫘', categoryId: 'refrigerated', subCategoryId: 'dairy', defaultDays: 7),
+  
+  // === 冷凍 - 肉 ===
+  FoodTemplate(id: 't45', name: '冷凍豚肉', icon: '🍖', categoryId: 'frozen', subCategoryId: 'frozen_meat', defaultDays: 90),
+  FoodTemplate(id: 't46', name: '冷凍鶏肉', icon: '🍗', categoryId: 'frozen', subCategoryId: 'frozen_meat', defaultDays: 90),
+  FoodTemplate(id: 't47', name: '冷凍牛肉', icon: '🥩', categoryId: 'frozen', subCategoryId: 'frozen_meat', defaultDays: 90),
+  FoodTemplate(id: 't48', name: '冷凍ひき肉', icon: '🍖', categoryId: 'frozen', subCategoryId: 'frozen_meat', defaultDays: 60),
+  
+  // === 冷凍 - 魚 ===
+  FoodTemplate(id: 't49', name: '冷凍鮭', icon: '🐟', categoryId: 'frozen', subCategoryId: 'frozen_fish', defaultDays: 60),
+  FoodTemplate(id: 't50', name: '冷凍エビ', icon: '🦐', categoryId: 'frozen', subCategoryId: 'frozen_fish', defaultDays: 90),
+  FoodTemplate(id: 't51', name: '冷凍イカ', icon: '🦑', categoryId: 'frozen', subCategoryId: 'frozen_fish', defaultDays: 90),
+  
+  // === 冷凍 - 野菜 ===
+  FoodTemplate(id: 't52', name: '冷凍ブロッコリー', icon: '🥦', categoryId: 'frozen', subCategoryId: 'frozen_veg', defaultDays: 60),
+  FoodTemplate(id: 't53', name: '冷凍枝豆', icon: '🫛', categoryId: 'frozen', subCategoryId: 'frozen_veg', defaultDays: 90),
+  FoodTemplate(id: 't54', name: 'ミックスベジタブル', icon: '🥗', categoryId: 'frozen', subCategoryId: 'frozen_veg', defaultDays: 60),
+  
+  // === 冷凍 - 冷凍食品 ===
+  FoodTemplate(id: 't55', name: '冷凍餃子', icon: '🥟', categoryId: 'frozen', subCategoryId: 'frozen_meal', defaultDays: 60),
+  FoodTemplate(id: 't56', name: '冷凍ピザ', icon: '🍕', categoryId: 'frozen', subCategoryId: 'frozen_meal', defaultDays: 90),
+  FoodTemplate(id: 't57', name: '冷凍ご飯', icon: '🍚', categoryId: 'frozen', subCategoryId: 'frozen_meal', defaultDays: 30),
+  FoodTemplate(id: 't58', name: '冷凍うどん', icon: '🍜', categoryId: 'frozen', subCategoryId: 'frozen_meal', defaultDays: 60),
+  FoodTemplate(id: 't59', name: '冷凍チャーハン', icon: '🍳', categoryId: 'frozen', subCategoryId: 'frozen_meal', defaultDays: 60),
+  
+  // === 冷凍 - アイス ===
+  FoodTemplate(id: 't60', name: 'アイスクリーム', icon: '🍦', categoryId: 'frozen', subCategoryId: 'ice_cream', defaultDays: 180),
+  FoodTemplate(id: 't61', name: 'アイスバー', icon: '🍧', categoryId: 'frozen', subCategoryId: 'ice_cream', defaultDays: 180),
+  
+  // === 常温 - パン ===
+  FoodTemplate(id: 't62', name: '食パン', icon: '🍞', categoryId: 'pantry', subCategoryId: 'bread', defaultDays: 4),
+  FoodTemplate(id: 't63', name: 'ロールパン', icon: '🥐', categoryId: 'pantry', subCategoryId: 'bread', defaultDays: 3),
+  FoodTemplate(id: 't64', name: 'フランスパン', icon: '🥖', categoryId: 'pantry', subCategoryId: 'bread', defaultDays: 2),
+  
+  // === 常温 - 麺類 ===
+  FoodTemplate(id: 't65', name: 'カップ麺', icon: '🍜', categoryId: 'pantry', subCategoryId: 'noodle', defaultDays: 180),
+  FoodTemplate(id: 't66', name: '袋麺', icon: '🍜', categoryId: 'pantry', subCategoryId: 'noodle', defaultDays: 180),
+  FoodTemplate(id: 't67', name: 'パスタ', icon: '🍝', categoryId: 'pantry', subCategoryId: 'noodle', defaultDays: 365),
+  FoodTemplate(id: 't68', name: 'そうめん', icon: '🍜', categoryId: 'pantry', subCategoryId: 'noodle', defaultDays: 365),
+  
+  // === 常温 - 缶詰 ===
+  FoodTemplate(id: 't69', name: 'ツナ缶', icon: '🥫', categoryId: 'pantry', subCategoryId: 'canned', defaultDays: 365),
+  FoodTemplate(id: 't70', name: 'トマト缶', icon: '🥫', categoryId: 'pantry', subCategoryId: 'canned', defaultDays: 365),
+  FoodTemplate(id: 't71', name: 'コーン缶', icon: '🥫', categoryId: 'pantry', subCategoryId: 'canned', defaultDays: 365),
+  FoodTemplate(id: 't72', name: 'フルーツ缶', icon: '🥫', categoryId: 'pantry', subCategoryId: 'canned', defaultDays: 365),
+  
+  // === 常温 - お菓子 ===
+  FoodTemplate(id: 't73', name: 'クッキー', icon: '🍪', categoryId: 'pantry', subCategoryId: 'snack', defaultDays: 60),
+  FoodTemplate(id: 't74', name: 'チョコレート', icon: '🍫', categoryId: 'pantry', subCategoryId: 'snack', defaultDays: 180),
+  FoodTemplate(id: 't75', name: 'ポテトチップス', icon: '🥔', categoryId: 'pantry', subCategoryId: 'snack', defaultDays: 60),
+  
+  // === 常温 - 調味料 ===
+  FoodTemplate(id: 't76', name: '醤油', icon: '🧂', categoryId: 'pantry', subCategoryId: 'seasoning', defaultDays: 180),
+  FoodTemplate(id: 't77', name: 'みりん', icon: '🍶', categoryId: 'pantry', subCategoryId: 'seasoning', defaultDays: 180),
+  FoodTemplate(id: 't78', name: 'お米', icon: '🌾', categoryId: 'pantry', subCategoryId: 'seasoning', defaultDays: 60),
+  
+  // === 冷蔵 - その他 ===
+  FoodTemplate(id: 't79', name: '肉まん', icon: '🥟', categoryId: 'refrigerated', subCategoryId: 'other_ref', defaultDays: 3),
+  FoodTemplate(id: 't80', name: 'あんまん', icon: '🥮', categoryId: 'refrigerated', subCategoryId: 'other_ref', defaultDays: 3),
+  FoodTemplate(id: 't81', name: '惣菜', icon: '🍱', categoryId: 'refrigerated', subCategoryId: 'other_ref', defaultDays: 2),
+  FoodTemplate(id: 't82', name: 'サラダ', icon: '🥗', categoryId: 'refrigerated', subCategoryId: 'other_ref', defaultDays: 1),
+  FoodTemplate(id: 't83', name: 'お弁当', icon: '🍱', categoryId: 'refrigerated', subCategoryId: 'other_ref', defaultDays: 1),
+  FoodTemplate(id: 't84', name: 'デザート', icon: '🍮', categoryId: 'refrigerated', subCategoryId: 'other_ref', defaultDays: 3),
+  FoodTemplate(id: 't85', name: 'ケーキ', icon: '🍰', categoryId: 'refrigerated', subCategoryId: 'other_ref', defaultDays: 3),
+  FoodTemplate(id: 't86', name: 'プリン', icon: '🍮', categoryId: 'refrigerated', subCategoryId: 'other_ref', defaultDays: 5),
+  
+  // === 冷凍 - その他 ===
+  FoodTemplate(id: 't87', name: '冷凍ケーキ', icon: '🍰', categoryId: 'frozen', subCategoryId: 'other_frozen', defaultDays: 90),
+  FoodTemplate(id: 't88', name: '冷凍パン', icon: '🍞', categoryId: 'frozen', subCategoryId: 'other_frozen', defaultDays: 30),
+  FoodTemplate(id: 't89', name: '保冷剤', icon: '🧊', categoryId: 'frozen', subCategoryId: 'other_frozen', defaultDays: 365),
+  
+  // === 常温 - その他 ===
+  FoodTemplate(id: 't90', name: 'ドリンク', icon: '🧃', categoryId: 'pantry', subCategoryId: 'other_pantry', defaultDays: 180),
+  FoodTemplate(id: 't91', name: 'お茶', icon: '🍵', categoryId: 'pantry', subCategoryId: 'other_pantry', defaultDays: 365),
+  FoodTemplate(id: 't92', name: 'コーヒー', icon: '☕', categoryId: 'pantry', subCategoryId: 'other_pantry', defaultDays: 365),
+  FoodTemplate(id: 't93', name: 'レトルト', icon: '🍛', categoryId: 'pantry', subCategoryId: 'other_pantry', defaultDays: 180),
+  FoodTemplate(id: 't94', name: 'ふりかけ', icon: '🍚', categoryId: 'pantry', subCategoryId: 'other_pantry', defaultDays: 180),
+];
+
+class FoodItem {
+  final String id;
+  final String name;
+  final String icon;
+  final String categoryId;
+  final DateTime expirationDate;
+  final DateTime createdAt;
+
+  FoodItem({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.categoryId,
+    required this.expirationDate,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  int get daysUntilExpiration =>
+      expirationDate.difference(DateTime.now()).inDays;
+
+  bool get isExpired => daysUntilExpiration < 0;
+  bool get isWarning => daysUntilExpiration <= 3 && !isExpired;
+
+  FoodItem copyWith({
+    String? name,
+    String? icon,
+    String? categoryId,
+    DateTime? expirationDate,
+  }) {
+    return FoodItem(
+      id: id,
+      name: name ?? this.name,
+      icon: icon ?? this.icon,
+      categoryId: categoryId ?? this.categoryId,
+      expirationDate: expirationDate ?? this.expirationDate,
+      createdAt: createdAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'icon': icon,
+    'categoryId': categoryId,
+    'expirationDate': expirationDate.toIso8601String(),
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory FoodItem.fromJson(Map<String, dynamic> json) => FoodItem(
+    id: json['id'],
+    name: json['name'],
+    icon: json['icon'] ?? '🍽️',
+    categoryId: json['categoryId'],
+    expirationDate: DateTime.parse(json['expirationDate']),
+    createdAt: DateTime.parse(json['createdAt']),
+  );
+}
+
+// ===== LocalStorage管理 =====
+
+class StorageService {
+  static const String _foodKey = 'fresh_alert_foods';
+  static const String _customTemplateKey = 'fresh_alert_custom_templates';
+
+  static List<FoodItem> loadFoods() {
+    final data = html.window.localStorage[_foodKey];
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> jsonList = jsonDecode(data);
+      return jsonList.map((json) => FoodItem.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static void saveFoods(List<FoodItem> foods) {
+    final jsonList = foods.map((f) => f.toJson()).toList();
+    html.window.localStorage[_foodKey] = jsonEncode(jsonList);
+  }
+
+  static List<FoodTemplate> loadCustomTemplates() {
+    final data = html.window.localStorage[_customTemplateKey];
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> jsonList = jsonDecode(data);
+      return jsonList.map((json) => FoodTemplate.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static void saveCustomTemplates(List<FoodTemplate> templates) {
+    final jsonList = templates.map((t) => t.toJson()).toList();
+    html.window.localStorage[_customTemplateKey] = jsonEncode(jsonList);
+  }
+}
+
+// ===== 通知サービス =====
+
+class NotificationService {
+  static Future<void> requestPermission() async {
+    if (html.Notification.supported) {
+      await html.Notification.requestPermission();
+    }
+  }
+
+  static void showNotification(String title, String body) {
+    if (html.Notification.supported &&
+        html.Notification.permission == 'granted') {
+      html.Notification(title, body: body, icon: '🚨');
+    }
+  }
+
+  static void checkExpirations(List<FoodItem> foods) {
+    final warnings = foods.where((f) => f.isWarning || f.isExpired).toList();
+    if (warnings.isNotEmpty) {
+      final expired = warnings.where((f) => f.isExpired).length;
+      final warning = warnings.where((f) => f.isWarning).length;
+      String message = '';
+      if (expired > 0) message += '🚨 期限切れ: $expired件 ';
+      if (warning > 0) message += '⚠️ 期限間近: $warning件';
+      showNotification('冷蔵庫番アラート', message);
+    }
+  }
+}
+
+// ===== ダッシュボード画面 =====
+
+class DashboardScreen extends StatefulWidget {
+  final List<FoodItem> foods;
+  final Function(List<FoodItem>) onFoodsChanged;
+
+  const DashboardScreen({
+    super.key,
+    required this.foods,
+    required this.onFoodsChanged,
+  });
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String _sortMode = 'expiration'; // 'expiration', 'status', 'added'
+  
+  int get _expiredCount => widget.foods.where((f) => f.isExpired).length;
+  int get _warningCount => widget.foods.where((f) => f.isWarning).length;
+  int get _safeCount => widget.foods.where((f) => !f.isExpired && !f.isWarning).length;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _deleteFood(String id) {
+    final updatedFoods = widget.foods.where((f) => f.id != id).toList();
+    StorageService.saveFoods(updatedFoods);
+    widget.onFoodsChanged(updatedFoods);
+  }
+
+  void _updateFood(FoodItem food) {
+    final updatedFoods = widget.foods.map((f) => f.id == food.id ? food : f).toList();
+    StorageService.saveFoods(updatedFoods);
+    widget.onFoodsChanged(updatedFoods);
+  }
+
+  List<FoodItem> _getSortedFoods([String? categoryId]) {
+    final foods = categoryId == null
+        ? List<FoodItem>.from(widget.foods)
+        : widget.foods.where((f) => f.categoryId == categoryId).toList();
+    switch (_sortMode) {
+      case 'expiration':
+        foods.sort((a, b) => a.expirationDate.compareTo(b.expirationDate));
+        break;
+      case 'status':
+        foods.sort((a, b) {
+          if (a.isExpired != b.isExpired) return a.isExpired ? -1 : 1;
+          if (a.isWarning != b.isWarning) return a.isWarning ? -1 : 1;
+          return a.expirationDate.compareTo(b.expirationDate);
+        });
+        break;
+      case 'added':
+        foods.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+    }
+    return foods;
+  }
+
+  String _getTodayString() {
+    final now = DateTime.now();
+    final weekdays = ['月', '火', '水', '木', '金', '土', '日'];
+    final weekday = weekdays[now.weekday - 1];
+    return '${now.month}/${now.day}(${weekday})';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Text('🧊', style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 8),
+                const Text(
+                  '冷蔵庫番',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.today, size: 12, color: Color(0xFF2196F3)),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getTodayString(),
+                        style: const TextStyle(
+                          color: Color(0xFF2196F3),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                if (_expiredCount > 0) _buildMiniTag('🚨', _expiredCount, const Color(0xFFE53935)),
+                if (_expiredCount > 0) const SizedBox(width: 6),
+                if (_warningCount > 0) _buildMiniTag('⚠️', _warningCount, const Color(0xFFFF9800)),
+                if (_warningCount > 0) const SizedBox(width: 6),
+                _buildMiniTag('✅', _safeCount, const Color(0xFF4CAF50)),
+              ],
+            ),
+          ],
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: const Color(0xFF2196F3),
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: const Color(0xFF2196F3),
+          indicatorWeight: 3,
+          tabs: [
+            const Tab(child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('📋', style: TextStyle(fontSize: 16)),
+                SizedBox(width: 4),
+                Text('全て', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              ],
+            )),
+            ...defaultCategories.map((cat) => Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(cat.icon, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 4),
+                  Text(cat.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                ],
+              ),
+            )),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildFoodList(null),
+          ...defaultCategories.map((cat) => _buildFoodList(cat.id)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFoodList(String? categoryId) {
+    final sortedFoods = _getSortedFoods(categoryId);
+    final categoryName = categoryId == null
+        ? 'すべて'
+        : defaultCategories.firstWhere((c) => c.id == categoryId).name;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+
+          // 食材一覧ヘッダー + ソート
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${categoryId == null ? "📋" : defaultCategories.firstWhere((c) => c.id == categoryId).icon} ${categoryName}の食材',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              // ソート切り替えボタン
+              GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (_sortMode == 'expiration') {
+                          _sortMode = 'status';
+                        } else if (_sortMode == 'status') {
+                          _sortMode = 'added';
+                        } else {
+                          _sortMode = 'expiration';
+                        }
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF2196F3).withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _sortMode == 'expiration'
+                              ? Icons.schedule
+                              : _sortMode == 'status'
+                                ? Icons.priority_high
+                                : Icons.history,
+                            size: 14,
+                            color: const Color(0xFF2196F3),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _sortMode == 'expiration'
+                              ? '期限順'
+                              : _sortMode == 'status'
+                                ? '緊急度順'
+                                : '追加順',
+                            style: const TextStyle(
+                              color: Color(0xFF2196F3),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+              
+          if (sortedFoods.isEmpty)
+            Container(
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Text('🧊', style: TextStyle(fontSize: 48)),
+                        const SizedBox(height: 12),
+                        Text(
+                          '食材がまだありません',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '下の「登録」タブから追加しましょう',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+          )
+          else
+            ...sortedFoods.map((food) => _buildFoodItem(food)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniTag(String icon, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: 4),
+          Text(
+            '$count',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFoodItem(FoodItem food) {
+    final category = defaultCategories.firstWhere(
+      (c) => c.id == food.categoryId,
+      orElse: () => defaultCategories.first,
+    );
+
+    Color statusColor;
+    String statusText;
+    
+    if (food.isExpired) {
+      statusColor = const Color(0xFFE53935);
+      statusText = '期限切れ';
+    } else if (food.isWarning) {
+      statusColor = const Color(0xFFFF9800);
+      statusText = 'あと${food.daysUntilExpiration}日';
+    } else {
+      statusColor = const Color(0xFF4CAF50);
+      statusText = 'あと${food.daysUntilExpiration}日';
+    }
+
+    return Dismissible(
+      key: Key(food.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) => _deleteFood(food.id),
+      child: GestureDetector(
+        onTap: () => _showEditDialog(food, category),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: food.isExpired 
+              ? Border.all(color: const Color(0xFFE53935), width: 1.5)
+              : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: category.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(child: Text(food.icon, style: const TextStyle(fontSize: 22))),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      food.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                    ),
+                    Text(
+                      '${category.name} • ～ ${food.expirationDate.month}/${food.expirationDate.day}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(FoodItem food, Category category) {
+    DateTime selectedDate = food.expirationDate;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: category.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(child: Text(food.icon, style: const TextStyle(fontSize: 32))),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(food.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text('${category.name}', style: TextStyle(color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('賞味期限を変更', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (date != null) setModalState(() => selectedDate = date);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: category.color),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today, color: category.color),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${selectedDate.year}/${selectedDate.month}/${selectedDate.day}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.chevron_right, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildQuickDateButton('-1日', () => setModalState(() => selectedDate = selectedDate.subtract(const Duration(days: 1))), Colors.red),
+                  _buildQuickDateButton('+1日', () => setModalState(() => selectedDate = selectedDate.add(const Duration(days: 1))), category.color),
+                  _buildQuickDateButton('+3日', () => setModalState(() => selectedDate = selectedDate.add(const Duration(days: 3))), category.color),
+                  _buildQuickDateButton('+7日', () => setModalState(() => selectedDate = selectedDate.add(const Duration(days: 7))), category.color),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('キャンセル'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final updatedFood = food.copyWith(expirationDate: selectedDate);
+                        _updateFood(updatedFood);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: category.color,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('保存する', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickDateButton(String label, VoidCallback onTap, Color color) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13)),
+      ),
+    );
+  }
+}
+
+// ===== 登録画面 =====
+
+class HomeScreen extends StatefulWidget {
+  final List<FoodItem> foods;
+  final List<FoodTemplate> customTemplates;
+  final Function(List<FoodItem>) onFoodsChanged;
+  final Function(List<FoodTemplate>) onTemplatesChanged;
+
+  const HomeScreen({
+    super.key,
+    required this.foods,
+    required this.customTemplates,
+    required this.onFoodsChanged,
+    required this.onTemplatesChanged,
+  });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String _selectedSubCategoryId = '';
+  String _sortMode = 'added'; // 'expiration', 'status', 'added' - 登録画面は追加順がデフォルト
+
+  List<FoodItem> get _foods => widget.foods;
+  List<FoodTemplate> get _customTemplates => widget.customTemplates;
+  List<FoodTemplate> get _allTemplates => [...defaultTemplates, ..._customTemplates];
+
+  int get _expiredCount => _foods.where((f) => f.isExpired).length;
+  int get _warningCount => _foods.where((f) => f.isWarning).length;
+  int get _safeCount => _foods.where((f) => !f.isExpired && !f.isWarning).length;
+
+  String _getTodayString() {
+    final now = DateTime.now();
+    final weekdays = ['月', '火', '水', '木', '金', '土', '日'];
+    final weekday = weekdays[now.weekday - 1];
+    return '${now.month}/${now.day}(${weekday})';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {
+        _selectedSubCategoryId = '';
+      });
+    });
+  }
+
+  void _addFood(FoodItem food) {
+    final updatedFoods = [..._foods, food];
+    StorageService.saveFoods(updatedFoods);
+    widget.onFoodsChanged(updatedFoods);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${food.icon} ${food.name} を追加しました'),
+        backgroundColor: const Color(0xFF4CAF50),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _updateFood(FoodItem food) {
+    final updatedFoods = _foods.map((f) => f.id == food.id ? food : f).toList();
+    StorageService.saveFoods(updatedFoods);
+    widget.onFoodsChanged(updatedFoods);
+  }
+
+  void _quickAddFromTemplate(FoodTemplate template) {
+    final food = FoodItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: template.name,
+      icon: template.icon,
+      categoryId: template.categoryId,
+      expirationDate: DateTime.now().add(Duration(days: template.defaultDays)),
+    );
+    _addFood(food);
+  }
+
+  void _addCustomTemplate(FoodTemplate template) {
+    final updatedTemplates = [..._customTemplates, template];
+    StorageService.saveCustomTemplates(updatedTemplates);
+    widget.onTemplatesChanged(updatedTemplates);
+  }
+
+  void _deleteFood(String id) {
+    final updatedFoods = _foods.where((f) => f.id != id).toList();
+    StorageService.saveFoods(updatedFoods);
+    widget.onFoodsChanged(updatedFoods);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Text('🧊', style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 8),
+                const Text(
+                  '冷蔵庫番',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.today, size: 12, color: Color(0xFF2196F3)),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getTodayString(),
+                        style: const TextStyle(
+                          color: Color(0xFF2196F3),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                if (_expiredCount > 0) _buildMiniTag('🚨', _expiredCount, const Color(0xFFE53935)),
+                if (_expiredCount > 0) const SizedBox(width: 6),
+                if (_warningCount > 0) _buildMiniTag('⚠️', _warningCount, const Color(0xFFFF9800)),
+                if (_warningCount > 0) const SizedBox(width: 6),
+                _buildMiniTag('✅', _safeCount, const Color(0xFF4CAF50)),
+              ],
+            ),
+          ],
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: const Color(0xFF2196F3),
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: const Color(0xFF2196F3),
+          indicatorWeight: 3,
+          tabs: defaultCategories.map((cat) => Tab(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(cat.icon, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 6),
+                Text(cat.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+          )).toList(),
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: defaultCategories.map((cat) {
+          final items = _foods.where((f) => f.categoryId == cat.id).toList();
+          final subCategories = defaultSubCategories.where((s) => s.parentCategoryId == cat.id).toList();
+          return _buildCategoryPage(items, subCategories, cat);
+        }).toList(),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddDialog(),
+        backgroundColor: const Color(0xFF2196F3),
+        icon: const Icon(Icons.edit, color: Colors.white),
+        label: const Text('カスタム追加', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildMiniTag(String icon, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: 4),
+          Text(
+            '$count',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<FoodItem> _getSortedItems(List<FoodItem> items) {
+    final sortedItems = List<FoodItem>.from(items);
+    switch (_sortMode) {
+      case 'expiration':
+        sortedItems.sort((a, b) => a.expirationDate.compareTo(b.expirationDate));
+        break;
+      case 'status':
+        sortedItems.sort((a, b) {
+          if (a.isExpired != b.isExpired) return a.isExpired ? -1 : 1;
+          if (a.isWarning != b.isWarning) return a.isWarning ? -1 : 1;
+          return a.expirationDate.compareTo(b.expirationDate);
+        });
+        break;
+      case 'added':
+        sortedItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+    }
+    return sortedItems;
+  }
+
+  Widget _buildCategoryPage(List<FoodItem> items, List<SubCategory> subCategories, Category category) {
+    final sortedItems = _getSortedItems(items);
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // サブカテゴリ選択
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.category, color: category.color, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      '種類を選択',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: category.color,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: subCategories.map((sub) {
+                    final isSelected = _selectedSubCategoryId == sub.id;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedSubCategoryId = isSelected ? '' : sub.id;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? category.color : category.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(sub.icon, style: const TextStyle(fontSize: 16)),
+                            const SizedBox(width: 4),
+                            Text(
+                              sub.name,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : category.color,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // ワンタップ追加セクション
+          if (_selectedSubCategoryId.isNotEmpty) ...[
+            _buildTemplateSection(category),
+            const SizedBox(height: 16),
+          ],
+          
+          // 登録済みアイテムセクション + ソート
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(category.icon, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${category.name}の食材',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: category.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${items.length}件',
+                      style: TextStyle(color: category.color, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              // ソート切り替えボタン
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (_sortMode == 'added') {
+                      _sortMode = 'expiration';
+                    } else if (_sortMode == 'expiration') {
+                      _sortMode = 'status';
+                    } else {
+                      _sortMode = 'added';
+                    }
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF2196F3).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _sortMode == 'added'
+                          ? Icons.history
+                          : _sortMode == 'expiration'
+                            ? Icons.schedule
+                            : Icons.priority_high,
+                        size: 14,
+                        color: const Color(0xFF2196F3),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _sortMode == 'added'
+                          ? '追加順'
+                          : _sortMode == 'expiration'
+                            ? '期限順'
+                            : '緊急度順',
+                        style: const TextStyle(
+                          color: Color(0xFF2196F3),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    Text(category.icon, style: const TextStyle(fontSize: 48)),
+                    const SizedBox(height: 12),
+                    Text(
+                      '種類を選んで\n食材を追加しましょう',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...sortedItems.map((food) => _buildFoodCard(food, category)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemplateSection(Category category) {
+    final templates = _allTemplates
+        .where((t) => t.categoryId == category.id && t.subCategoryId == _selectedSubCategoryId)
+        .toList();
+    
+    if (templates.isEmpty) return const SizedBox.shrink();
+    
+    final subCategory = defaultSubCategories.firstWhere(
+      (s) => s.id == _selectedSubCategoryId,
+      orElse: () => const SubCategory(id: '', name: '', icon: '', parentCategoryId: ''),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(subCategory.icon, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Text(
+                '${subCategory.name}をワンタップ追加',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: category.color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: templates.map((template) => _buildTemplateButton(template, category)).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemplateButton(FoodTemplate template, Category category) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _quickAddFromTemplate(template),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: category.color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: category.color.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(template.icon, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 6),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    template.name,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  Text(
+                    '${template.defaultDays}日',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFoodCard(FoodItem food, Category category) {
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+
+    if (food.isExpired) {
+      statusColor = const Color(0xFFE53935);
+      statusText = '期限切れ';
+      statusIcon = Icons.error;
+    } else if (food.isWarning) {
+      statusColor = const Color(0xFFFF9800);
+      statusText = 'あと${food.daysUntilExpiration}日';
+      statusIcon = Icons.warning;
+    } else {
+      statusColor = const Color(0xFF4CAF50);
+      statusText = 'あと${food.daysUntilExpiration}日';
+      statusIcon = Icons.check_circle;
+    }
+
+    return Dismissible(
+      key: Key(food.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) => _deleteFood(food.id),
+      child: GestureDetector(
+        onTap: () => _showEditDialog(food, category),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: category.color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(food.icon, style: const TextStyle(fontSize: 24)),
+              ),
+            ),
+            title: Text(
+              food.name,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
+            subtitle: Row(
+              children: [
+                Text(
+                  '〜 ${food.expirationDate.month}/${food.expirationDate.day}',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.edit, size: 14, color: Colors.grey[400]),
+                Text(
+                  ' タップで編集',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                ),
+              ],
+            ),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(statusIcon, size: 14, color: statusColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(FoodItem food, Category category) {
+    DateTime selectedDate = food.expirationDate;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: category.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(food.icon, style: const TextStyle(fontSize: 32)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          food.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '登録日: ${food.createdAt.month}/${food.createdAt.day}',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('賞味期限を変更', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (date != null) {
+                    setModalState(() => selectedDate = date);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: category.color),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today, color: category.color),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${selectedDate.year}/${selectedDate.month}/${selectedDate.day}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.chevron_right, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // クイック日付変更ボタン
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildQuickDateButton('-1日', () {
+                    setModalState(() {
+                      selectedDate = selectedDate.subtract(const Duration(days: 1));
+                    });
+                  }, Colors.red),
+                  _buildQuickDateButton('+1日', () {
+                    setModalState(() {
+                      selectedDate = selectedDate.add(const Duration(days: 1));
+                    });
+                  }, category.color),
+                  _buildQuickDateButton('+3日', () {
+                    setModalState(() {
+                      selectedDate = selectedDate.add(const Duration(days: 3));
+                    });
+                  }, category.color),
+                  _buildQuickDateButton('+7日', () {
+                    setModalState(() {
+                      selectedDate = selectedDate.add(const Duration(days: 7));
+                    });
+                  }, category.color),
+                  _buildQuickDateButton('今日', () {
+                    setModalState(() {
+                      selectedDate = DateTime.now();
+                    });
+                  }, category.color),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('キャンセル'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final updatedFood = food.copyWith(expirationDate: selectedDate);
+                        _updateFood(updatedFood);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${food.icon} ${food.name} の期限を更新しました'),
+                            backgroundColor: category.color,
+                            duration: const Duration(seconds: 1),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: category.color,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '保存する',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickDateButton(String label, VoidCallback onTap, Color color) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddDialog() {
+    final nameController = TextEditingController();
+    String selectedCategoryId = defaultCategories[_tabController.index].id;
+    String selectedIcon = '🍽️';
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
+    int defaultDays = 7;
+    bool saveAsTemplate = false;
+
+    final iconOptions = ['🍽️', '🥗', '🍱', '🥘', '🍲', '🥙', '🌮', '🌯', '🍛', '🍝', '🥪', '🍔', '🍟', '🍕', '🌭', '🥓', '🍗', '🍖', '🦴', '🌶️', '🫑', '🥒', '🥕', '🧅', '🧄', '🥔', '🍠', '🫘', '🥜', '🍇', '🍈', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓', '🫐', '🥝', '🐟', '🦐', '🦑', '🐚', '🥩', '🥛', '🥚', '🧀', '🧈', '🍞', '🥐', '🥖'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'カスタム食材を追加',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+
+                const Text('アイコン', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(8),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 10,
+                      mainAxisSpacing: 4,
+                      crossAxisSpacing: 4,
+                    ),
+                    itemCount: iconOptions.length,
+                    itemBuilder: (context, index) {
+                      final icon = iconOptions[index];
+                      final isSelected = selectedIcon == icon;
+                      return GestureDetector(
+                        onTap: () => setModalState(() => selectedIcon = icon),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF2196F3) : Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Center(
+                            child: Text(icon, style: const TextStyle(fontSize: 18)),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: '食材名',
+                    hintText: '例: 手作りサラダ',
+                    prefixIcon: Text(selectedIcon, style: const TextStyle(fontSize: 20)),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 48),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F7FA),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                const Text('カテゴリ', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Row(
+                  children: defaultCategories.map((cat) {
+                    final isSelected = selectedCategoryId == cat.id;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setModalState(() => selectedCategoryId = cat.id),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected ? cat.color : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(cat.icon, style: const TextStyle(fontSize: 24)),
+                              const SizedBox(height: 4),
+                              Text(
+                                cat.name,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : Colors.grey[700],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                const Text('賞味期限', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setModalState(() {
+                        selectedDate = date;
+                        defaultDays = date.difference(DateTime.now()).inDays;
+                      });
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Color(0xFF2196F3)),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${selectedDate.year}/${selectedDate.month}/${selectedDate.day}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.chevron_right, color: Colors.grey),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8E1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: saveAsTemplate,
+                        onChanged: (v) => setModalState(() => saveAsTemplate = v ?? false),
+                        activeColor: const Color(0xFFFF9800),
+                      ),
+                      const Expanded(
+                        child: Text('テンプレートとして保存', style: TextStyle(fontSize: 13)),
+                      ),
+                      const Icon(Icons.bookmark, color: Color(0xFFFF9800)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (nameController.text.trim().isEmpty) return;
+                      
+                      final food = FoodItem(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        name: nameController.text.trim(),
+                        icon: selectedIcon,
+                        categoryId: selectedCategoryId,
+                        expirationDate: selectedDate,
+                      );
+                      _addFood(food);
+
+                      if (saveAsTemplate) {
+                        final template = FoodTemplate(
+                          id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+                          name: nameController.text.trim(),
+                          icon: selectedIcon,
+                          categoryId: selectedCategoryId,
+                          subCategoryId: 'other',
+                          defaultDays: defaultDays,
+                        );
+                        _addCustomTemplate(template);
+                      }
+
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2196F3),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '追加する',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+}
