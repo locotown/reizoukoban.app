@@ -429,38 +429,7 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
         actions: [
-          // マイテンプレート管理ボタン
-          if (_customTemplates.isNotEmpty)
-            GestureDetector(
-              onTap: () => _showMyTemplatesDialog(),
-              child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF9800).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFF9800).withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.bookmark, size: 14, color: Color(0xFFFF9800)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'マイ(${_customTemplates.length})',
-                      style: const TextStyle(
-                        color: Color(0xFFFF9800),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          // ステータスタグ
+          // ステータスタグのみ
           if (_expiredCount > 0)
             Padding(
               padding: const EdgeInsets.only(right: 4),
@@ -758,8 +727,6 @@ class _HomeScreenState extends State<HomeScreen>
             t.subCategoryId == _selectedSubCategoryId)
         .toList();
 
-    if (templates.isEmpty) return const SizedBox.shrink();
-
     final subCategory = defaultSubCategories.firstWhere(
       (s) => s.id == _selectedSubCategoryId,
       orElse: () => const SubCategory(
@@ -783,28 +750,387 @@ class _HomeScreenState extends State<HomeScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(subCategory.icon, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
-              Text(
-                '${subCategory.name}をワンタップ追加',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: category.color,
-                ),
+              Row(
+                children: [
+                  Text(subCategory.icon, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${subCategory.name}をワンタップ追加',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: category.color,
+                    ),
+                  ),
+                ],
               ),
+              // マイテンプレート管理ボタン
+              if (_customTemplates.isNotEmpty)
+                GestureDetector(
+                  onTap: () => _showMyTemplatesDialog(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFFFF9800).withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.bookmark, size: 12, color: Color(0xFFFF9800)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'マイ(${_customTemplates.length})',
+                          style: const TextStyle(
+                            color: Color(0xFFFF9800),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: templates
-                .map((template) => _buildTemplateButton(template, category))
-                .toList(),
+            children: [
+              // 既存テンプレート
+              ...templates
+                  .map((template) => _buildTemplateButton(template, category)),
+              // 新規テンプレート登録ボタン
+              _buildAddTemplateButton(category, subCategory),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAddTemplateButton(Category category, SubCategory subCategory) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showAddTemplateDialog(category, subCategory),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: category.color.withValues(alpha: 0.5),
+              width: 1,
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add_circle_outline, size: 20, color: category.color),
+              const SizedBox(width: 6),
+              Text(
+                '追加',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: category.color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddTemplateDialog(Category category, SubCategory subCategory) {
+    final nameController = TextEditingController();
+    String selectedIcon = subCategory.icon;
+    int defaultDays = 7;
+
+    final icons = ['🥛', '🧀', '🥚', '🥩', '🍖', '🐟', '🐔', '🥬', '🥕', '🍅', '🥒', '🍎', '🍊', '🍌', '🍞', '🍚', '🍜', '🥫', '🍵', '🧃', '🍺', '🍷', '🧁', '🍰', '🍫', '🍿', '🥜', '🌶️', '🧄', '🧅', '🥓', '🌭', '🍕', '🍔', '🥗', '🍱', '🥡', '🧈', '🥐', '🥖'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(subCategory.icon, style: const TextStyle(fontSize: 24)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '新しいテンプレートを追加',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '${category.name} > ${subCategory.name}',
+                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // アイコン選択
+                const Text('アイコン', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemCount: icons.length,
+                    itemBuilder: (context, index) {
+                      final icon = icons[index];
+                      final isSelected = icon == selectedIcon;
+                      return GestureDetector(
+                        onTap: () => setModalState(() => selectedIcon = icon),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? category.color.withValues(alpha: 0.2) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: isSelected ? Border.all(color: category.color, width: 2) : null,
+                          ),
+                          child: Center(
+                            child: Text(icon, style: const TextStyle(fontSize: 24)),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 名前入力
+                const Text('食材名', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: '例: 豚バラ肉、りんご など',
+                    prefixIcon: Text(selectedIcon, style: const TextStyle(fontSize: 20)),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 48),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F7FA),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: category.color, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 保存期限
+                const Text('デフォルト保存期限（日）', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (defaultDays > 1) {
+                          setModalState(() => defaultDays--);
+                        }
+                      },
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: category.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.remove, color: category.color),
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F7FA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$defaultDays 日',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        if (defaultDays < 365) {
+                          setModalState(() => defaultDays++);
+                        }
+                      },
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: category.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.add, color: category.color),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // クイック日数ボタン
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [1, 3, 5, 7, 14, 30].map((days) {
+                    return GestureDetector(
+                      onTap: () => setModalState(() => defaultDays = days),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: defaultDays == days ? category.color : category.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '$days日',
+                          style: TextStyle(
+                            color: defaultDays == days ? Colors.white : category.color,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+                // ボタン
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('キャンセル'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (nameController.text.trim().isEmpty) return;
+
+                          // テンプレートとして保存
+                          final template = FoodTemplate(
+                            id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+                            name: nameController.text.trim(),
+                            icon: selectedIcon,
+                            categoryId: category.id,
+                            subCategoryId: subCategory.id,
+                            defaultDays: defaultDays,
+                          );
+                          _addCustomTemplate(template);
+
+                          // 食材も追加
+                          final food = FoodItem(
+                            id: DateTime.now().millisecondsSinceEpoch.toString(),
+                            name: nameController.text.trim(),
+                            icon: selectedIcon,
+                            categoryId: category.id,
+                            expirationDate: DateTime.now().add(Duration(days: defaultDays)),
+                          );
+                          _addFood(food);
+
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: category.color,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.bookmark_add, size: 18),
+                            SizedBox(width: 8),
+                            Text('テンプレ登録して追加', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
