@@ -47,8 +47,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   int get _expiredCount => _foods.where((f) => f.isExpired).length;
   int get _warningCount => _foods.where((f) => f.isWarning).length;
-  int get _safeCount =>
-      _foods.where((f) => !f.isExpired && !f.isWarning).length;
 
   String _getTodayString() {
     final now = DateTime.now();
@@ -429,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
         actions: [
-          // ステータスタグのみ
+          // ステータスタグ（期限切れ・警告のみ表示）
           if (_expiredCount > 0)
             Padding(
               padding: const EdgeInsets.only(right: 4),
@@ -440,19 +438,13 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           if (_warningCount > 0)
             Padding(
-              padding: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.only(right: 8),
               child: MiniTag(
                   icon: '⚠️',
                   count: _warningCount,
                   color: const Color(0xFFFF9800)),
             ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: MiniTag(
-                icon: '✅',
-                count: _safeCount,
-                color: const Color(0xFF4CAF50)),
-          ),
+          const SizedBox(width: 4),
         ],
         bottom: TabBar(
           controller: _tabController,

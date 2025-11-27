@@ -40,8 +40,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   int get _expiredCount => widget.foods.where((f) => f.isExpired).length;
   int get _warningCount => widget.foods.where((f) => f.isWarning).length;
-  int get _safeCount =>
-      widget.foods.where((f) => !f.isExpired && !f.isWarning).length;
 
   @override
   void initState() {
@@ -176,17 +174,13 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           if (_warningCount > 0)
             Padding(
-              padding: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.only(right: 8),
               child: MiniTag(
                   icon: '⚠️',
                   count: _warningCount,
                   color: const Color(0xFFFF9800)),
             ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: MiniTag(
-                icon: '✅', count: _safeCount, color: const Color(0xFF4CAF50)),
-          ),
+          const SizedBox(width: 4),
         ],
         bottom: TabBar(
           controller: _tabController,
