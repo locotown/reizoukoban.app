@@ -105,12 +105,277 @@ class _HomeScreenState extends State<HomeScreen>
     final updatedTemplates = [..._customTemplates, template];
     StorageService.saveCustomTemplates(updatedTemplates);
     widget.onTemplatesChanged(updatedTemplates);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${template.icon} ${template.name} をテンプレートに保存しました'),
+        backgroundColor: const Color(0xFFFF9800),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _deleteCustomTemplate(String id) {
+    final updatedTemplates = _customTemplates.where((t) => t.id != id).toList();
+    StorageService.saveCustomTemplates(updatedTemplates);
+    widget.onTemplatesChanged(updatedTemplates);
+  }
+
+  void _updateCustomTemplate(FoodTemplate template) {
+    final updatedTemplates = _customTemplates
+        .map((t) => t.id == template.id ? template : t)
+        .toList();
+    StorageService.saveCustomTemplates(updatedTemplates);
+    widget.onTemplatesChanged(updatedTemplates);
   }
 
   void _deleteFood(String id) {
     final updatedFoods = _foods.where((f) => f.id != id).toList();
     StorageService.saveFoods(updatedFoods);
     widget.onFoodsChanged(updatedFoods);
+  }
+
+  void _showMyTemplatesDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // ヘッダー
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.bookmark, color: Color(0xFFFF9800), size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'マイテンプレート',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${_customTemplates.length}件のカスタムテンプレート',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // テンプレート一覧
+              Expanded(
+                child: _customTemplates.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
+                            const SizedBox(height: 16),
+                            Text(
+                              'マイテンプレートがありません',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'カスタム追加時に「テンプレートとして保存」を\nチェックすると追加されます',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _customTemplates.length,
+                        itemBuilder: (context, index) {
+                          final template = _customTemplates[index];
+                          final category = defaultCategories.firstWhere(
+                            (c) => c.id == template.categoryId,
+                            orElse: () => defaultCategories.first,
+                          );
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFFF9800).withValues(alpha: 0.3),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              leading: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: category.color.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Text(template.icon, style: const TextStyle(fontSize: 24)),
+                                ),
+                              ),
+                              title: Row(
+                                children: [
+                                  Text(
+                                    template.name,
+                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: category.color.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(category.icon, style: const TextStyle(fontSize: 10)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          category.name,
+                                          style: TextStyle(
+                                            color: category.color,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Text(
+                                'デフォルト保存期限: ${template.defaultDays}日',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // 編集ボタン
+                                  IconButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showEditTemplateDialog(template, category);
+                                    },
+                                    icon: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.edit, size: 18, color: Color(0xFF2196F3)),
+                                    ),
+                                  ),
+                                  // 削除ボタン
+                                  IconButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showDeleteTemplateConfirmDialog(template);
+                                    },
+                                    icon: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE53935).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.delete, size: 18, color: Color(0xFFE53935)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              // 使い方のヒント
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F7FA),
+                  border: Border(top: BorderSide(color: Colors.grey[200]!)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.lightbulb, size: 18, color: Color(0xFFFF9800)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'テンプレートを長押しすると編集・削除できます',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -121,73 +386,105 @@ class _HomeScreenState extends State<HomeScreen>
         elevation: 0,
         backgroundColor: Colors.white,
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Image.asset(
-                  'assets/icons/app_icon.png',
-                  width: 32,
-                  height: 32,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  '冷蔵庫番',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2196F3).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.today,
-                          size: 12, color: Color(0xFF2196F3)),
-                      const SizedBox(width: 4),
-                      Text(
-                        _getTodayString(),
-                        style: const TextStyle(
-                          color: Color(0xFF2196F3),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            Image.asset(
+              'assets/icons/app_icon.png',
+              width: 32,
+              height: 32,
             ),
-            Row(
-              children: [
-                if (_expiredCount > 0)
-                  MiniTag(
-                      icon: '🚨',
-                      count: _expiredCount,
-                      color: const Color(0xFFE53935)),
-                if (_expiredCount > 0) const SizedBox(width: 6),
-                if (_warningCount > 0)
-                  MiniTag(
-                      icon: '⚠️',
-                      count: _warningCount,
-                      color: const Color(0xFFFF9800)),
-                if (_warningCount > 0) const SizedBox(width: 6),
-                MiniTag(
-                    icon: '✅',
-                    count: _safeCount,
-                    color: const Color(0xFF4CAF50)),
-              ],
+            const SizedBox(width: 8),
+            const Text(
+              '冷蔵庫番',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A2E),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.today,
+                      size: 11, color: Color(0xFF2196F3)),
+                  const SizedBox(width: 3),
+                  Text(
+                    _getTodayString(),
+                    style: const TextStyle(
+                      color: Color(0xFF2196F3),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+        actions: [
+          // マイテンプレート管理ボタン
+          if (_customTemplates.isNotEmpty)
+            GestureDetector(
+              onTap: () => _showMyTemplatesDialog(),
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bookmark, size: 14, color: Color(0xFFFF9800)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'マイ(${_customTemplates.length})',
+                      style: const TextStyle(
+                        color: Color(0xFFFF9800),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // ステータスタグ
+          if (_expiredCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: MiniTag(
+                  icon: '🚨',
+                  count: _expiredCount,
+                  color: const Color(0xFFE53935)),
+            ),
+          if (_warningCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: MiniTag(
+                  icon: '⚠️',
+                  count: _warningCount,
+                  color: const Color(0xFFFF9800)),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: MiniTag(
+                icon: '✅',
+                count: _safeCount,
+                color: const Color(0xFF4CAF50)),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: const Color(0xFF2196F3),
@@ -513,10 +810,13 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildTemplateButton(FoodTemplate template, Category category) {
+    final isCustom = template.id.startsWith('custom_');
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _quickAddFromTemplate(template),
+        onLongPress: isCustom ? () => _showTemplateOptionsDialog(template, category) : null,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -524,8 +824,10 @@ class _HomeScreenState extends State<HomeScreen>
             color: category.color.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: category.color.withValues(alpha: 0.3),
-              width: 1,
+              color: isCustom 
+                  ? const Color(0xFFFF9800).withValues(alpha: 0.5)
+                  : category.color.withValues(alpha: 0.3),
+              width: isCustom ? 2 : 1,
             ),
           ),
           child: Row(
@@ -537,13 +839,22 @@ class _HomeScreenState extends State<HomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    template.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        template.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      if (isCustom) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.bookmark, size: 12, color: Color(0xFFFF9800)),
+                      ],
+                    ],
                   ),
                   Text(
                     '${template.defaultDays}日',
@@ -557,6 +868,469 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showTemplateOptionsDialog(FoodTemplate template, Category category) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: category.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Text(template.icon, style: const TextStyle(fontSize: 32)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            template.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.bookmark, size: 12, color: Color(0xFFFF9800)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'マイテンプレート',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xFFFF9800),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '保存期限: ${template.defaultDays}日',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // 編集ボタン
+            ListTile(
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.edit, color: Color(0xFF2196F3)),
+              ),
+              title: const Text('テンプレートを編集', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('名前・アイコン・保存期限を変更', style: TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                _showEditTemplateDialog(template, category);
+              },
+            ),
+            const SizedBox(height: 8),
+            // 削除ボタン
+            ListTile(
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE53935).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.delete, color: Color(0xFFE53935)),
+              ),
+              title: const Text('テンプレートを削除', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFFE53935))),
+              subtitle: const Text('このテンプレートを完全に削除', style: TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteTemplateConfirmDialog(template);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditTemplateDialog(FoodTemplate template, Category category) {
+    final nameController = TextEditingController(text: template.name);
+    String selectedIcon = template.icon;
+    int defaultDays = template.defaultDays;
+
+    final icons = ['🥛', '🧀', '🥚', '🥩', '🍖', '🐟', '🐔', '🥬', '🥕', '🍅', '🥒', '🍎', '🍊', '🍌', '🍞', '🍚', '🍜', '🥫', '🍵', '🧃', '🍺', '🍷', '🧁', '🍰', '🍫', '🍿', '🥜', '🌶️', '🧄', '🧅'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Icon(Icons.edit, color: Color(0xFF2196F3)),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'テンプレートを編集',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // アイコン選択
+                const Text('アイコン', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemCount: icons.length,
+                    itemBuilder: (context, index) {
+                      final icon = icons[index];
+                      final isSelected = icon == selectedIcon;
+                      return GestureDetector(
+                        onTap: () => setModalState(() => selectedIcon = icon),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? category.color.withValues(alpha: 0.2) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: isSelected ? Border.all(color: category.color, width: 2) : null,
+                          ),
+                          child: Center(
+                            child: Text(icon, style: const TextStyle(fontSize: 24)),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 名前入力
+                const Text('テンプレート名', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    hintText: 'テンプレート名を入力',
+                    prefixIcon: Text(selectedIcon, style: const TextStyle(fontSize: 20)),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 48),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F7FA),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: category.color, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 保存期限
+                const Text('デフォルト保存期限（日）', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (defaultDays > 1) {
+                          setModalState(() => defaultDays--);
+                        }
+                      },
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: category.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.remove, color: category.color),
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F7FA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$defaultDays 日',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        if (defaultDays < 365) {
+                          setModalState(() => defaultDays++);
+                        }
+                      },
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: category.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.add, color: category.color),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // クイック日数ボタン
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [3, 5, 7, 14, 30, 60, 90].map((days) {
+                    return GestureDetector(
+                      onTap: () => setModalState(() => defaultDays = days),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: defaultDays == days ? category.color : category.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '$days日',
+                          style: TextStyle(
+                            color: defaultDays == days ? Colors.white : category.color,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('キャンセル'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (nameController.text.trim().isEmpty) return;
+                          
+                          final updatedTemplate = FoodTemplate(
+                            id: template.id,
+                            name: nameController.text.trim(),
+                            icon: selectedIcon,
+                            categoryId: template.categoryId,
+                            subCategoryId: template.subCategoryId,
+                            defaultDays: defaultDays,
+                          );
+                          _updateCustomTemplate(updatedTemplate);
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('$selectedIcon ${nameController.text.trim()} を更新しました'),
+                              backgroundColor: const Color(0xFF2196F3),
+                              duration: const Duration(seconds: 1),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2196F3),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('保存', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteTemplateConfirmDialog(FoodTemplate template) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE53935).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.delete, color: Color(0xFFE53935)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('テンプレートを削除', style: TextStyle(fontSize: 18)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Text(template.icon, style: const TextStyle(fontSize: 32)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(template.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('保存期限: ${template.defaultDays}日', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'このテンプレートを削除しますか？\nこの操作は取り消せません。',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _deleteCustomTemplate(template.id);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${template.icon} ${template.name} を削除しました'),
+                  backgroundColor: const Color(0xFFE53935),
+                  duration: const Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE53935),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
       ),
     );
   }
@@ -671,193 +1445,232 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _showEditDialog(FoodItem food, Category category) {
     DateTime selectedDate = food.expirationDate;
+    final nameController = TextEditingController(text: food.name);
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: category.color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: Text(food.icon,
+                            style: const TextStyle(fontSize: 32)),
+                      ),
                     ),
-                    child: Center(
-                      child: Text(food.icon,
-                          style: const TextStyle(fontSize: 32)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '食材を編集',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '登録日: ${food.createdAt.month}/${food.createdAt.day}',
+                            style:
+                                TextStyle(color: Colors.grey[600], fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // 名前編集フィールド
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('食材名',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    hintText: '食材名を入力',
+                    prefixIcon: Text(food.icon,
+                        style: const TextStyle(fontSize: 20)),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 48),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F7FA),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: category.color, width: 2),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('賞味期限',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate:
+                          DateTime.now().subtract(const Duration(days: 30)),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setModalState(() => selectedDate = date);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: category.color),
+                    ),
+                    child: Row(
                       children: [
+                        Icon(Icons.calendar_today, color: category.color),
+                        const SizedBox(width: 12),
                         Text(
-                          food.name,
+                          '${selectedDate.year}/${selectedDate.month}/${selectedDate.day}',
                           style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              fontSize: 18, fontWeight: FontWeight.w600),
                         ),
-                        Text(
-                          '登録日: ${food.createdAt.month}/${food.createdAt.day}',
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 13),
-                        ),
+                        const Spacer(),
+                        const Icon(Icons.chevron_right, color: Colors.grey),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('賞味期限を変更',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: selectedDate,
-                    firstDate:
-                        DateTime.now().subtract(const Duration(days: 30)),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (date != null) {
-                    setModalState(() => selectedDate = date);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: category.color),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_today, color: category.color),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${selectedDate.year}/${selectedDate.month}/${selectedDate.day}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.chevron_right, color: Colors.grey),
-                    ],
-                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              // クイック日付変更ボタン
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  _buildQuickDateButton('-1日', () {
-                    setModalState(() {
-                      selectedDate =
-                          selectedDate.subtract(const Duration(days: 1));
-                    });
-                  }, Colors.red),
-                  _buildQuickDateButton('+1日', () {
-                    setModalState(() {
-                      selectedDate = selectedDate.add(const Duration(days: 1));
-                    });
-                  }, category.color),
-                  _buildQuickDateButton('+3日', () {
-                    setModalState(() {
-                      selectedDate = selectedDate.add(const Duration(days: 3));
-                    });
-                  }, category.color),
-                  _buildQuickDateButton('+7日', () {
-                    setModalState(() {
-                      selectedDate = selectedDate.add(const Duration(days: 7));
-                    });
-                  }, category.color),
-                  _buildQuickDateButton('今日', () {
-                    setModalState(() {
-                      selectedDate = DateTime.now();
-                    });
-                  }, category.color),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('キャンセル'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final updatedFood =
-                            food.copyWith(expirationDate: selectedDate);
-                        _updateFood(updatedFood);
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                '${food.icon} ${food.name} の期限を更新しました'),
-                            backgroundColor: category.color,
-                            duration: const Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
+                const SizedBox(height: 8),
+                // クイック日付変更ボタン
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _buildQuickDateButton('-1日', () {
+                      setModalState(() {
+                        selectedDate =
+                            selectedDate.subtract(const Duration(days: 1));
+                      });
+                    }, Colors.red),
+                    _buildQuickDateButton('+1日', () {
+                      setModalState(() {
+                        selectedDate = selectedDate.add(const Duration(days: 1));
+                      });
+                    }, category.color),
+                    _buildQuickDateButton('+3日', () {
+                      setModalState(() {
+                        selectedDate = selectedDate.add(const Duration(days: 3));
+                      });
+                    }, category.color),
+                    _buildQuickDateButton('+7日', () {
+                      setModalState(() {
+                        selectedDate = selectedDate.add(const Duration(days: 7));
+                      });
+                    }, category.color),
+                    _buildQuickDateButton('今日', () {
+                      setModalState(() {
+                        selectedDate = DateTime.now();
+                      });
+                    }, category.color),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: category.color,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      child: const Text(
-                        '保存する',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        child: const Text('キャンセル'),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final newName = nameController.text.trim();
+                          if (newName.isEmpty) return;
+                          
+                          final updatedFood = food.copyWith(
+                            name: newName,
+                            expirationDate: selectedDate,
+                          );
+                          _updateFood(updatedFood);
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  '${food.icon} $newName を更新しました'),
+                              backgroundColor: category.color,
+                              duration: const Duration(seconds: 1),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: category.color,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '保存する',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
