@@ -13,6 +13,18 @@ class AuthService {
   /// ユーザーIDを取得
   String? get userId => _auth.currentUser?.uid;
 
+  /// 匿名ログイン（テスト用）
+  Future<UserCredential?> signInAnonymously() async {
+    try {
+      final UserCredential userCredential = await _auth.signInAnonymously();
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw 'エラーが発生しました: $e';
+    }
+  }
+
   /// メールアドレスでユーザー登録
   Future<UserCredential?> signUpWithEmail({
     required String email,

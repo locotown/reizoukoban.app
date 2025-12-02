@@ -53,6 +53,37 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // 匿名ログイン処理
+  Future<void> _handleAnonymousLogin() async {
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.signInAnonymously();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('匿名ログインしました（テスト用）'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,6 +225,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 匿名ログインボタン（テスト用）
+                  SizedBox(
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _handleAnonymousLogin,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF2196F3)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.person_outline),
+                      label: const Text(
+                        '匿名でログイン（テスト用）',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
