@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "buildCommand": "flutter build web --release --pwa-strategy=none --dart-define=FLUTTER_WEB_USE_SKIA=false",
+  "outputDirectory": "build/web",
+  "framework": null,
+  "installCommand": "if [ ! -d \"$HOME/flutter\" ]; then git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter; fi && export PATH=\"$HOME/flutter/bin:$PATH\" && flutter --version && flutter pub get",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "ALLOWALL"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors *"
+        }
+      ]
+    }
+  ]
+}
