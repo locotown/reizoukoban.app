@@ -54,4 +54,25 @@ class FoodItem {
     expirationDate: DateTime.parse(json['expirationDate']),
     createdAt: DateTime.parse(json['createdAt']),
   );
+
+  /// Supabaseのデータからオブジェクトを作成
+  factory FoodItem.fromSupabase(Map<String, dynamic> json) {
+    return FoodItem(
+      id: json['id'],
+      name: json['name'] ?? '',
+      icon: json['icon'] ?? '🍽️',
+      categoryId: json['category'] ?? '',
+      expirationDate: json['expiry_date'] != null 
+          ? DateTime.parse(json['expiry_date'])
+          : DateTime.now(),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+    );
+  }
+
+  // 互換性のためのゲッター
+  String get category => categoryId;
+  DateTime? get expiryDate => expirationDate;
+  String? get memo => null; // 将来的に追加予定
 }

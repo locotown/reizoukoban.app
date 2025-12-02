@@ -12,6 +12,10 @@ import 'models/stock_item.dart';
 // Services
 import 'services/storage_service.dart';
 import 'services/supabase_auth_service.dart';
+import 'services/supabase_service.dart';
+
+// Supabase Realtime
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Screens
 import 'screens/dashboard_screen.dart';
@@ -107,36 +111,113 @@ class _MainNavigationState extends State<MainNavigation> {
   List<StockItem> _stocks = [];
   
   bool _isInitialLoading = true;
+  
+  // Supabaseサービス
+  final _supabaseService = SupabaseService();
+  
+  // リアルタイムチャンネル
+  RealtimeChannel? _foodsChannel;
+  RealtimeChannel? _stocksChannel;
+  RealtimeChannel? _templatesChannel;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _startRealtimeSync();
+  }
+
+  @override
+  void dispose() {
+    // チャンネル購読解除
+    if (_foodsChannel != null) _supabaseService.unsubscribe(_foodsChannel!);
+    if (_stocksChannel != null) _supabaseService.unsubscribe(_stocksChannel!);
+    if (_templatesChannel != null) _supabaseService.unsubscribe(_templatesChannel!);
+    super.dispose();
   }
 
   Future<void> _loadData() async {
-    // ローカルストレージからデータを読み込み
-    setState(() {
-      _foods = StorageService.loadFoods();
-      _customTemplates = StorageService.loadCustomTemplates();
-      _stocks = StorageService.loadStocks();
-      _isInitialLoading = false;
+    try {
+      // Supabaseからデータ読み込み
+      final foods = await _supabaseService.getFoods();
+      final stocks = await _supabaseService.getStocks();
+      final templates = await _supabaseService.getCustomTemplates();
+
+      if (mounted) {
+        setState(() {
+          _foods = foods.isNotEmpty ? foods : StorageService.loadFoods();
+          _stocks = stocks.isNotEmpty ? stocks : StorageService.loadStocks();
+          _customTemplates = templates.isNotEmpty 
+              ? templates 
+              : StorageService.loadCustomTemplates();
+          _isInitialLoading = false;
+        });
+
+        // ローカルストレージにも保存
+        StorageService.saveFoods(_foods);
+        StorageService.saveStocks(_stocks);
+        StorageService.saveCustomTemplates(_customTemplates);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ データ読み込みエラー: $e');
+      }
+      
+      // エラー時はローカルストレージから読み込み
+      if (mounted) {
+        setState(() {
+          _foods = StorageService.loadFoods();
+          _customTemplates = StorageService.loadCustomTemplates();
+          _stocks = StorageService.loadStocks();
+          _isInitialLoading = false;
+        });
+      }
+    }
+  }
+
+  /// リアルタイム同期開始
+  void _startRealtimeSync() {
+    // 食材のリアルタイム監視
+    _foodsChannel = _supabaseService.watchFoods((foods) {
+      if (mounted) {
+        setState(() => _foods = foods);
+        StorageService.saveFoods(foods);
+      }
+    });
+
+    // ストックのリアルタイム監視
+    _stocksChannel = _supabaseService.watchStocks((stocks) {
+      if (mounted) {
+        setState(() => _stocks = stocks);
+        StorageService.saveStocks(stocks);
+      }
+    });
+
+    // カスタムテンプレートのリアルタイム監視
+    _templatesChannel = _supabaseService.watchCustomTemplates((templates) {
+      if (mounted) {
+        setState(() => _customTemplates = templates);
+        StorageService.saveCustomTemplates(templates);
+      }
     });
   }
 
   void _updateFoods(List<FoodItem> foods) {
     setState(() => _foods = foods);
     StorageService.saveFoods(foods);
+    // Supabase同期はリアルタイムリスナーが自動処理
   }
 
   void _updateCustomTemplates(List<FoodTemplate> templates) {
     setState(() => _customTemplates = templates);
     StorageService.saveCustomTemplates(templates);
+    // Supabase同期はリアルタイムリスナーが自動処理
   }
 
   void _updateStocks(List<StockItem> stocks) {
     setState(() => _stocks = stocks);
     StorageService.saveStocks(stocks);
+    // Supabase同期はリアルタイムリスナーが自動処理
   }
 
   @override

@@ -111,4 +111,25 @@ class StockItem {
       'updatedAt': updatedAt.toIso8601String(),
     };
   }
+
+  /// Supabaseのデータからオブジェクトを作成
+  factory StockItem.fromSupabase(Map<String, dynamic> json) {
+    return StockItem(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      icon: json['icon'] as String? ?? '📦',
+      categoryId: json['category_id'] as String? ?? '',
+      status: StockStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => StockStatus.sufficient,
+      ),
+      memo: json['memo'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : DateTime.now(),
+    );
+  }
 }

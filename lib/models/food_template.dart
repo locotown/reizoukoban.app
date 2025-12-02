@@ -32,4 +32,19 @@ class FoodTemplate {
     subCategoryId: json['subCategoryId'] ?? 'other',
     defaultDays: json['defaultDays'],
   );
+
+  /// Supabaseのデータからオブジェクトを作成
+  factory FoodTemplate.fromSupabase(Map<String, dynamic> json) {
+    return FoodTemplate(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      icon: json['icon'] as String? ?? '🍽️',
+      categoryId: json['category'] as String? ?? '',
+      subCategoryId: 'custom',  // カスタムテンプレート用
+      defaultDays: 7,  // デフォルト7日
+    );
+  }
+
+  // 互換性のためのゲッター
+  String get category => categoryId;
 }
