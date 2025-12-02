@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
@@ -21,10 +22,20 @@ import 'screens/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Firebase初期化
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Firebase初期化（エラーハンドリング付き）
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    if (kDebugMode) {
+      print('✅ Firebase初期化成功');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('❌ Firebase初期化エラー: $e');
+    }
+    // Firebase初期化に失敗してもアプリは起動する
+  }
   
   runApp(const FreshAlertApp());
 }

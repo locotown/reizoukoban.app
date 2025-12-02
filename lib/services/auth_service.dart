@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 /// Firebase Authentication管理サービス
 class AuthService {
@@ -16,11 +17,23 @@ class AuthService {
   /// 匿名ログイン（テスト用）
   Future<UserCredential?> signInAnonymously() async {
     try {
+      if (kDebugMode) {
+        print('🔐 匿名ログイン開始...');
+      }
       final UserCredential userCredential = await _auth.signInAnonymously();
+      if (kDebugMode) {
+        print('✅ 匿名ログイン成功: ${userCredential.user?.uid}');
+      }
       return userCredential;
     } on FirebaseAuthException catch (e) {
+      if (kDebugMode) {
+        print('❌ FirebaseAuthException: ${e.code} - ${e.message}');
+      }
       throw _handleAuthException(e);
     } catch (e) {
+      if (kDebugMode) {
+        print('❌ 予期しないエラー: $e');
+      }
       throw 'エラーが発生しました: $e';
     }
   }
