@@ -56,7 +56,9 @@ class FreshAlertApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Roboto',
       ),
-      home: const AuthWrapper(),
+      // Firebase認証を一時的に無効化（直接メイン画面へ）
+      home: const MainNavigation(),
+      // home: const AuthWrapper(),  // Firebase再設定時にこちらに戻す
     );
   }
 }
