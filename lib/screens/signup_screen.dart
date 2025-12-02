@@ -43,11 +43,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('登録が完了しました'),
+            content: Text('✅ 登録が完了しました\n確認メールをご確認ください'),
             backgroundColor: Color(0xFF4CAF50),
+            duration: Duration(seconds: 5),
           ),
         );
-        // 登録成功 - AuthStateChangesで自動的にメイン画面に遷移
+        // メール確認後に自動的にメイン画面に遷移
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
