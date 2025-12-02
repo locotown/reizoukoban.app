@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import '../services/firestore_service.dart';
-import '../services/storage_service.dart';
+import '../services/supabase_auth_service.dart';
 
 /// ユーザー登録画面
 class SignUpScreen extends StatefulWidget {
@@ -16,8 +14,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final AuthService _authService = AuthService();
-  final FirestoreService _firestoreService = FirestoreService();
+  final SupabaseAuthService _authService = SupabaseAuthService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -43,17 +40,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         password: _passwordController.text.trim(),
       );
 
-      // ローカルデータをFirestoreにアップロード
-      final foods = StorageService.loadFoods();
-      final customTemplates = StorageService.loadCustomTemplates();
-      final stocks = StorageService.loadStocks();
-
-      await _firestoreService.uploadLocalData(
-        foods: foods,
-        customTemplates: customTemplates,
-        stocks: stocks,
-      );
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -61,7 +47,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             backgroundColor: Color(0xFF4CAF50),
           ),
         );
-        Navigator.pop(context); // ログイン画面に戻る
+        // 登録成功 - AuthStateChangesで自動的にメイン画面に遷移
       }
     } catch (e) {
       if (mounted) {

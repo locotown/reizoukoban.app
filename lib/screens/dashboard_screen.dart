@@ -9,7 +9,7 @@ import '../constants/categories.dart';
 
 // Services
 import '../services/storage_service.dart';
-import '../services/auth_service.dart';
+import '../services/supabase_auth_service.dart';
 
 // Screens
 import 'help_screen.dart';
@@ -150,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           // ログアウトボタン
           IconButton(
             onPressed: () async {
-              final authService = AuthService();
+              final authService = SupabaseAuthService();
               try {
                 await authService.signOut();
               } catch (e) {
