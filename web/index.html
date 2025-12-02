@@ -135,6 +135,19 @@
       }
     }
 
+    // ローディング進捗表示（シンプル版）
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += 15;
+      const loadingText = document.querySelector('.loading-text');
+      if (loadingText && progress <= 90) {
+        loadingText.textContent = '読み込み中... ' + progress + '%';
+      }
+      if (progress >= 90) {
+        clearInterval(progressInterval);
+      }
+    }, 500);
+
     // Service Worker登録（キャッシュ用）- 一時的に無効化
     // if ('serviceWorker' in navigator) {
     //   window.addEventListener('load', function() {
@@ -148,11 +161,19 @@
   <script>
     // Flutterアプリの読み込み完了を監視
     window.addEventListener('flutter-first-frame', function() {
-      hideLoadingScreen();
+      clearInterval(progressInterval);
+      const loadingText = document.querySelector('.loading-text');
+      if (loadingText) {
+        loadingText.textContent = '完了！';
+      }
+      setTimeout(hideLoadingScreen, 200);
     });
 
     // フォールバック：10秒後に強制的にローディング画面を非表示
-    setTimeout(hideLoadingScreen, 10000);
+    setTimeout(function() {
+      clearInterval(progressInterval);
+      hideLoadingScreen();
+    }, 10000);
   </script>
 </body>
 </html>
