@@ -11,6 +11,7 @@ import '../constants/food_templates.dart';
 
 // Services
 import '../services/storage_service.dart';
+import '../services/supabase_service.dart';
 
 // Widgets
 import '../widgets/mini_tag.dart';
@@ -39,6 +40,8 @@ class _HomeScreenState extends State<HomeScreen>
   late TabController _tabController;
   String _selectedSubCategoryId = '';
   String _sortMode = 'added'; // 'expiration', 'status', 'added' - 登録画面は追加順がデフォルト
+  
+  final _supabaseService = SupabaseService();
 
   List<FoodItem> get _foods => widget.foods;
   List<FoodTemplate> get _customTemplates => widget.customTemplates;
@@ -66,25 +69,34 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  void _addFood(FoodItem food) {
+  void _addFood(FoodItem food) async {
     final updatedFoods = [..._foods, food];
     StorageService.saveFoods(updatedFoods);
     widget.onFoodsChanged(updatedFoods);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${food.icon} ${food.name} を追加しました'),
-        backgroundColor: const Color(0xFF4CAF50),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    
+    // Supabaseに保存
+    await _supabaseService.addFood(food);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${food.icon} ${food.name} を追加しました'),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
-  void _updateFood(FoodItem food) {
+  void _updateFood(FoodItem food) async {
     final updatedFoods =
         _foods.map((f) => f.id == food.id ? food : f).toList();
     StorageService.saveFoods(updatedFoods);
     widget.onFoodsChanged(updatedFoods);
+    
+    // Supabaseに保存
+    await _supabaseService.updateFood(food);
   }
 
   void _quickAddFromTemplate(FoodTemplate template) {

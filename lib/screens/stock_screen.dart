@@ -8,6 +8,7 @@ import '../constants/stock_categories.dart';
 
 // Services
 import '../services/storage_service.dart';
+import '../services/supabase_service.dart';
 
 /// ストック管理画面
 class StockScreen extends StatefulWidget {
@@ -27,6 +28,8 @@ class StockScreen extends StatefulWidget {
 class _StockScreenState extends State<StockScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  
+  final _supabaseService = SupabaseService();
 
   List<StockItem> get _stocks => widget.stocks;
 
@@ -46,34 +49,46 @@ class _StockScreenState extends State<StockScreen>
     super.dispose();
   }
 
-  void _addStock(StockItem stock) {
+  void _addStock(StockItem stock) async {
     final updatedStocks = [..._stocks, stock];
     StorageService.saveStocks(updatedStocks);
     widget.onStocksChanged(updatedStocks);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${stock.icon} ${stock.name} を追加しました'),
-        backgroundColor: const Color(0xFF4CAF50),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    
+    // Supabaseに保存
+    await _supabaseService.addStock(stock);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${stock.icon} ${stock.name} を追加しました'),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
-  void _updateStock(StockItem stock) {
+  void _updateStock(StockItem stock) async {
     final updatedStocks =
         _stocks.map((s) => s.id == stock.id ? stock : s).toList();
     StorageService.saveStocks(updatedStocks);
     widget.onStocksChanged(updatedStocks);
+    
+    // Supabaseに保存
+    await _supabaseService.updateStock(stock);
   }
 
-  void _deleteStock(String id) {
+  void _deleteStock(String id) async {
     final updatedStocks = _stocks.where((s) => s.id != id).toList();
     StorageService.saveStocks(updatedStocks);
     widget.onStocksChanged(updatedStocks);
+    
+    // Supabaseから削除
+    await _supabaseService.deleteStock(id);
   }
 
-  void _markAsPurchased(List<StockItem> items) {
+  void _markAsPurchased(List<StockItem> items) async {
     final updatedStocks = _stocks.map((s) {
       if (items.any((item) => item.id == s.id)) {
         return s.copyWith(status: StockStatus.sufficient);
@@ -82,14 +97,23 @@ class _StockScreenState extends State<StockScreen>
     }).toList();
     StorageService.saveStocks(updatedStocks);
     widget.onStocksChanged(updatedStocks);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${items.length}件を購入済みにしました'),
-        backgroundColor: const Color(0xFF4CAF50),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    
+    // Supabaseに保存（各アイテムを更新）
+    for (final item in items) {
+      final updatedItem = item.copyWith(status: StockStatus.sufficient);
+      await _supabaseService.updateStock(updatedItem);
+    }
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${items.length}件を購入済みにしました'),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override

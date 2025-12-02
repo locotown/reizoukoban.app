@@ -10,6 +10,7 @@ import '../constants/categories.dart';
 // Services
 import '../services/storage_service.dart';
 import '../services/supabase_auth_service.dart';
+import '../services/supabase_service.dart';
 
 // Screens
 import 'help_screen.dart';
@@ -38,6 +39,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _sortMode = 'expiration'; // 'expiration', 'status', 'added'
+  
+  final _supabaseService = SupabaseService();
 
   int get _expiredCount => widget.foods.where((f) => f.isExpired).length;
   int get _warningCount => widget.foods.where((f) => f.isWarning).length;
@@ -54,17 +57,23 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.dispose();
   }
 
-  void _deleteFood(String id) {
+  void _deleteFood(String id) async {
     final updatedFoods = widget.foods.where((f) => f.id != id).toList();
     StorageService.saveFoods(updatedFoods);
     widget.onFoodsChanged(updatedFoods);
+    
+    // Supabaseから削除
+    await _supabaseService.deleteFood(id);
   }
 
-  void _updateFood(FoodItem food) {
+  void _updateFood(FoodItem food) async {
     final updatedFoods =
         widget.foods.map((f) => f.id == food.id ? food : f).toList();
     StorageService.saveFoods(updatedFoods);
     widget.onFoodsChanged(updatedFoods);
+    
+    // Supabaseに保存
+    await _supabaseService.updateFood(food);
   }
 
   List<FoodItem> _getSortedFoods([String? categoryId]) {
