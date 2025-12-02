@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 // Models
 import 'models/food_item.dart';
@@ -7,13 +9,23 @@ import 'models/stock_item.dart';
 
 // Services
 import 'services/storage_service.dart';
+import 'services/auth_service.dart';
+import 'services/firestore_service.dart';
 
 // Screens
 import 'screens/dashboard_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/stock_screen.dart';
+import 'screens/login_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Firebase初期化
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   runApp(const FreshAlertApp());
 }
 
@@ -33,7 +45,40 @@ class FreshAlertApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Roboto',
       ),
-      home: const MainNavigation(),
+      home: const AuthWrapper(),
+    );
+  }
+}
+
+// ===== 認証ラッパー =====
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authService = AuthService();
+
+    return StreamBuilder(
+      stream: authService.authStateChanges,
+      builder: (context, snapshot) {
+        // ローディング中
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        // ログイン済み
+        if (snapshot.hasData && snapshot.data != null) {
+          return const MainNavigation();
+        }
+
+        // 未ログイン
+        return const LoginScreen();
+      },
     );
   }
 }
@@ -52,6 +97,9 @@ class _MainNavigationState extends State<MainNavigation> {
   List<FoodItem> _foods = [];
   List<FoodTemplate> _customTemplates = [];
   List<StockItem> _stocks = [];
+  
+  final FirestoreService _firestoreService = FirestoreService();
+  bool _isInitialLoading = true;
 
   @override
   void initState() {
@@ -59,34 +107,116 @@ class _MainNavigationState extends State<MainNavigation> {
     _loadData();
   }
 
-  void _loadData() {
-    setState(() {
-      _foods = StorageService.loadFoods();
-      _customTemplates = StorageService.loadCustomTemplates();
-      _stocks = StorageService.loadStocks();
+  Future<void> _loadData() async {
+    try {
+      // Firestoreからデータを読み込み
+      final cloudData = await _firestoreService.downloadCloudData();
+      
+      setState(() {
+        _foods = cloudData['foods'] as List<FoodItem>;
+        _customTemplates = cloudData['customTemplates'] as List<FoodTemplate>;
+        _stocks = cloudData['stocks'] as List<StockItem>;
+        _isInitialLoading = false;
+      });
+
+      // リアルタイム同期を開始
+      _startRealtimeSync();
+    } catch (e) {
+      // エラー時はローカルデータを読み込み
+      setState(() {
+        _foods = StorageService.loadFoods();
+        _customTemplates = StorageService.loadCustomTemplates();
+        _stocks = StorageService.loadStocks();
+        _isInitialLoading = false;
+      });
+    }
+  }
+
+  void _startRealtimeSync() {
+    // 食材データの監視
+    _firestoreService.watchFoods().listen((foods) {
+      if (mounted) {
+        setState(() => _foods = foods);
+        StorageService.saveFoods(foods); // ローカルにも保存
+      }
+    });
+
+    // カスタムテンプレートの監視
+    _firestoreService.watchCustomTemplates().listen((templates) {
+      if (mounted) {
+        setState(() => _customTemplates = templates);
+        StorageService.saveCustomTemplates(templates); // ローカルにも保存
+      }
+    });
+
+    // ストックデータの監視
+    _firestoreService.watchStocks().listen((stocks) {
+      if (mounted) {
+        setState(() => _stocks = stocks);
+        StorageService.saveStocks(stocks); // ローカルにも保存
+      }
     });
   }
 
-  void _updateFoods(List<FoodItem> foods) {
-    setState(() {
-      _foods = foods;
-    });
+  void _updateFoods(List<FoodItem> foods) async {
+    setState(() => _foods = foods);
+    StorageService.saveFoods(foods);
+    try {
+      await _firestoreService.saveFoods(foods);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('同期エラー: $e')),
+        );
+      }
+    }
   }
 
-  void _updateCustomTemplates(List<FoodTemplate> templates) {
-    setState(() {
-      _customTemplates = templates;
-    });
+  void _updateCustomTemplates(List<FoodTemplate> templates) async {
+    setState(() => _customTemplates = templates);
+    StorageService.saveCustomTemplates(templates);
+    try {
+      await _firestoreService.saveCustomTemplates(templates);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('同期エラー: $e')),
+        );
+      }
+    }
   }
 
-  void _updateStocks(List<StockItem> stocks) {
-    setState(() {
-      _stocks = stocks;
-    });
+  void _updateStocks(List<StockItem> stocks) async {
+    setState(() => _stocks = stocks);
+    StorageService.saveStocks(stocks);
+    try {
+      await _firestoreService.saveStocks(stocks);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('同期エラー: $e')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitialLoading) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('データを読み込み中...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     // 買い物が必要なアイテム数（バッジ用）
     final needShoppingCount = _stocks.where((s) => s.needsToBuy).length;
 
