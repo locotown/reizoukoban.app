@@ -1,9 +1,10 @@
 # Flutter build artifacts
 .dart_tool/
-build/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
+# Keep build/web for deployment
+!build/web/
 
 # IDE
 .idea/

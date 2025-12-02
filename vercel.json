@@ -1,9 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "$HOME/flutter/bin/flutter build web --release --pwa-strategy=none --dart-define=FLUTTER_WEB_USE_SKIA=false",
-  "outputDirectory": "build/web",
-  "framework": null,
-  "installCommand": "if [ ! -d \"$HOME/flutter\" ]; then git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter; fi && $HOME/flutter/bin/flutter --version && $HOME/flutter/bin/flutter pub get",
   "rewrites": [
     {
       "source": "/(.*)",
