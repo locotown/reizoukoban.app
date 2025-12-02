@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "939816788196",
+    "project_id": "reizoukoban-app",
+    "storage_bucket": "reizoukoban-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:939816788196:android:0f5baff3d18fe9d8118cf1",
+        "android_client_info": {
+          "package_name": "jp.reizoukoban.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDg0xf5gzJoJxI9YaljORiyXWjYGKX4pmA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

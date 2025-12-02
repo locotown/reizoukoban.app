@@ -9,6 +9,7 @@ import '../constants/categories.dart';
 
 // Services
 import '../services/storage_service.dart';
+import '../services/auth_service.dart';
 
 // Screens
 import 'help_screen.dart';
@@ -146,6 +147,29 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
         actions: [
+          // ログアウトボタン
+          IconButton(
+            onPressed: () async {
+              final authService = AuthService();
+              try {
+                await authService.signOut();
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('ログアウトに失敗しました: $e')),
+                  );
+                }
+              }
+            },
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.logout, size: 18, color: Colors.grey),
+            ),
+          ),
           // ヘルプボタン
           IconButton(
             onPressed: () {
