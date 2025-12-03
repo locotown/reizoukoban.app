@@ -22,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _hasCheckedDemoMode = false; // デモモードチェック済みフラグ
 
   @override
   void initState() {
@@ -33,7 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 
   /// ?demo=true の場合、デモ専用アカウントで自動ログイン
   /// デモアカウントにはサンプルデータがあらかじめ登録されています
+  /// ログアウト後の再ログインを防ぐため、1回だけチェック
   Future<void> _checkDemoMode() async {
+    // 既にチェック済みの場合はスキップ（ログアウト後の再実行防止）
+    if (_hasCheckedDemoMode) {
+      print('🔍 デモモードチェック: 既にチェック済み（スキップ）');
+      return;
+    }
+    
     if (!kIsWeb) {
       print('🔍 デモモードチェック: Web以外のプラットフォーム');
       return;  // Web以外では実行しない
@@ -49,7 +57,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final isDemoMode = uri.queryParameters['demo'] == 'true';
       print('🔍 デモモード判定: $isDemoMode');
       
-      if (isDemoMode) {
+      // チェック済みフラグを立てる
+      _hasCheckedDemoMode = true;
+      
+      // 既にログイン済みの場合は自動ログインしない（ログアウト対策）
+      final isAlreadyLoggedIn = _authService.currentUser != null;
+      print('🔍 ログイン状態: ${isAlreadyLoggedIn ? "ログイン済み" : "未ログイン"}');
+      
+      if (isDemoMode && !isAlreadyLoggedIn) {
         print('✅ デモモード検出！デモアカウントで自動ログイン開始...');
         // デモモードフラグが検出されたら自動的にデモアカウントでログイン実行
         await Future.delayed(const Duration(milliseconds: 800));  // UI表示待機
@@ -57,6 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
           print('🚀 デモアカウントログイン実行中...');
           await _handleDemoLogin();
         }
+      } else if (isDemoMode && isAlreadyLoggedIn) {
+        print('ℹ️ デモモードだが既にログイン済み（再ログイン防止）');
       } else {
         print('ℹ️ 通常モード（デモモードではない）');
       }
@@ -197,23 +214,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // アプリアイコン
+                  // アプリアイコン - 冷蔵庫
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 120,
+                    height: 120,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 20,
-                          offset: const Offset(0, 4),
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: const Center(
-                      child: Text('🧊', style: TextStyle(fontSize: 50)),
+                      child: Text('🧊', style: TextStyle(fontSize: 60)),
                     ),
                   ),
                   const SizedBox(height: 32),

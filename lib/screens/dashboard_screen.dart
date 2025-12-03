@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 // Models
 import '../models/category.dart';
@@ -23,6 +24,9 @@ import '../widgets/food_card.dart';
 // Additional imports
 import '../models/shopping_item.dart';
 import 'package:uuid/uuid.dart';
+
+// Web専用: URLパラメータクリア用
+import 'dart:html' as html show window;
 
 /// Dashboard画面（食品一覧表示）
 class DashboardScreen extends StatefulWidget {
@@ -168,6 +172,17 @@ class _DashboardScreenState extends State<DashboardScreen>
               final authService = SupabaseAuthService();
               try {
                 await authService.signOut();
+                
+                // デモモードの場合、URLパラメータをクリア（再ログイン防止）
+                if (kIsWeb) {
+                  final currentUrl = html.window.location.href;
+                  final uri = Uri.parse(currentUrl);
+                  if (uri.queryParameters['demo'] == 'true') {
+                    // ?demo=true を削除して通常モードに戻す
+                    final newUri = uri.replace(queryParameters: {});
+                    html.window.history.replaceState(null, '', newUri.toString());
+                  }
+                }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
