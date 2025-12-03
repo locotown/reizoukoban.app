@@ -35,7 +35,18 @@ class _StockScreenState extends State<StockScreen>
   
   final _supabaseService = SupabaseService();
 
-  List<StockItem> get _stocks => widget.stocks;
+  // 有効なストックカテゴリIDのリスト
+  static const _validStockCategoryIds = {
+    'daily', 'bath', 'cleaning', 'food_stock', 'medicine', 'other'
+  };
+
+  // フィルタリングされたストック（食材カテゴリを除外）
+  List<StockItem> get _stocks {
+    return widget.stocks.where((stock) {
+      // ストック専用カテゴリのみ表示（食材カテゴリ fridge, freezer, room を除外）
+      return _validStockCategoryIds.contains(stock.categoryId);
+    }).toList();
+  }
 
   // 買い物が必要なアイテム数
   int get _urgentCount => _stocks.where((s) => s.isUrgent).length;
