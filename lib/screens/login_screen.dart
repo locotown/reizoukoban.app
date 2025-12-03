@@ -10,6 +10,11 @@ import 'dart:html' as html show window;
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
+  /// デモモードチェックフラグをリセット（ログアウト時に呼び出す）
+  static void resetDemoModeFlag() {
+    _LoginScreenState._hasCheckedDemoModeGlobal = false;
+  }
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -22,7 +27,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _hasCheckedDemoMode = false; // デモモードチェック済みフラグ
+  // デモモードチェックのためのstatic変数（Widget再構築でもリセットされない）
+  static bool _hasCheckedDemoModeGlobal = false;
 
   @override
   void initState() {
@@ -34,10 +40,11 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 
   /// ?demo=true の場合、デモ専用アカウントで自動ログイン
   /// デモアカウントにはサンプルデータがあらかじめ登録されています
-  /// ログアウト後の再ログインを防ぐため、1回だけチェック
+  /// ログアウト後の再ログインを防ぐため、セッション中1回だけチェック
   Future<void> _checkDemoMode() async {
     // 既にチェック済みの場合はスキップ（ログアウト後の再実行防止）
-    if (_hasCheckedDemoMode) {
+    // static変数なのでWidget再構築でもリセットされない
+    if (_hasCheckedDemoModeGlobal) {
       print('🔍 デモモードチェック: 既にチェック済み（スキップ）');
       return;
     }
@@ -55,12 +62,12 @@ class _LoginScreenState extends State<LoginScreen> {
       print('🔍 クエリパラメータ: ${uri.queryParameters}');
       print('🔍 クエリ文字列: ${uri.query}');
       
-      // 厳密なチェック: ?demo=true のみ（?や空パラメータは除外）
-      final isDemoMode = uri.queryParameters['demo'] == 'true' && uri.query.isNotEmpty;
+      // 厳密なチェック: demo=true パラメータが存在する場合のみ
+      final isDemoMode = uri.queryParameters['demo'] == 'true';
       print('🔍 デモモード判定: $isDemoMode');
       
-      // チェック済みフラグを立てる
-      _hasCheckedDemoMode = true;
+      // チェック済みフラグを立てる（static変数で永続化）
+      _hasCheckedDemoModeGlobal = true;
       
       // 既にログイン済みの場合は自動ログインしない（ログアウト対策）
       final isAlreadyLoggedIn = _authService.currentUser != null;
@@ -411,6 +418,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // TOPページに戻るリンク
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () {
+                        // TOPページに遷移
+                        if (kIsWeb) {
+                          html.window.location.href = 'https://reizoukoban-app.vercel.app/';
+                        }
+                      },
+                      icon: const Icon(Icons.home_outlined, size: 18),
+                      label: const Text(
+                        'TOPページに戻る',
+                        style: TextStyle(
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.grey[600],
+                      ),
+                    ),
                   ),
                 ],
               ),

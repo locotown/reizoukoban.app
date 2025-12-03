@@ -15,6 +15,7 @@ import '../services/supabase_service.dart';
 
 // Screens
 import 'help_screen.dart';
+import 'login_screen.dart'; // デモモードフラグリセット用
 
 // Widgets
 import '../widgets/mini_tag.dart';
@@ -172,6 +173,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               final authService = SupabaseAuthService();
               try {
                 await authService.signOut();
+                
+                // デモモードフラグをリセット（再ログイン防止の重要な処理）
+                LoginScreen.resetDemoModeFlag();
                 
                 // デモモードの場合、URLパラメータをクリア（再ログイン防止）
                 if (kIsWeb) {
