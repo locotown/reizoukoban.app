@@ -632,13 +632,24 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  /// 食材カテゴリをストックカテゴリにマッピング
+  String _mapFoodCategoryToStockCategory(String foodCategoryId) {
+    // 食材カテゴリ → ストックカテゴリのマッピング
+    const mapping = {
+      'fridge': 'food_stock',     // 冷蔵 → 食品ストック
+      'freezer': 'food_stock',    // 冷凍 → 食品ストック
+      'room': 'food_stock',       // 常温 → 食品ストック
+    };
+    return mapping[foodCategoryId] ?? 'food_stock';
+  }
+
   /// 食材を買い物リストに追加
   void _addToShoppingList(FoodItem food) async {
     final shoppingItem = ShoppingItem(
       id: const Uuid().v4(),
       name: food.name,
       icon: food.icon,
-      categoryId: food.categoryId,
+      categoryId: _mapFoodCategoryToStockCategory(food.categoryId), // ストックカテゴリにマッピング
       source: ShoppingSource.food,
       sourceId: food.id,
     );

@@ -357,6 +357,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       } else {
         // 新しいストックを作成
         print('➕ [購入済み処理] 新規ストック作成: ${item.name}');
+        print('   - カテゴリID: ${item.categoryId}');
+        print('   - アイコン: ${item.icon}');
+        print('   - メモ: ${item.memo}');
+        
         final newStock = StockItem(
           id: const Uuid().v4(),
           name: item.name,
@@ -367,7 +371,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         );
         updatedStocks.add(newStock);
         print('💾 [購入済み処理] Supabaseに保存: ${newStock.id}');
-        await _supabaseService.addStock(newStock);
+        print('   - ストック総数: ${updatedStocks.length}');
+        
+        final result = await _supabaseService.addStock(newStock);
+        print('✅ [購入済み処理] Supabase保存結果: $result');
       }
     }
 
@@ -429,7 +436,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     final nameController = TextEditingController();
     final memoController = TextEditingController();
     String selectedIcon = '🛒';
-    String selectedCategoryId = '調味料'; // デフォルトカテゴリ
+    String selectedCategoryId = 'food_stock'; // デフォルトカテゴリ（ストックと同じID）
 
     showDialog(
       context: context,
@@ -483,10 +490,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: const [
-                    DropdownMenuItem(value: '調味料', child: Text('🍶 調味料')),
-                    DropdownMenuItem(value: '日用品', child: Text('🧻 日用品')),
-                    DropdownMenuItem(value: '食品', child: Text('🍎 食品')),
-                    DropdownMenuItem(value: 'その他', child: Text('📦 その他')),
+                    DropdownMenuItem(value: 'food_stock', child: Text('🍶 調味料・食品')),
+                    DropdownMenuItem(value: 'daily', child: Text('🧻 日用品')),
+                    DropdownMenuItem(value: 'bath', child: Text('🧴 バス・洗面')),
+                    DropdownMenuItem(value: 'cleaning', child: Text('🧹 掃除・洗濯')),
+                    DropdownMenuItem(value: 'other', child: Text('📦 その他')),
                   ],
                   onChanged: (value) {
                     if (value != null) {
