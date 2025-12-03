@@ -150,9 +150,7 @@ class _MainNavigationState extends State<MainNavigation> {
           // Supabaseのデータを優先（RLSによりユーザーごとに分離されている）
           _foods = foods;
           _stocks = stocks;
-          _customTemplates = templates 
-              ? templates 
-              : StorageService.loadCustomTemplates();
+          _customTemplates = templates;
           _isInitialLoading = false;
         });
 
