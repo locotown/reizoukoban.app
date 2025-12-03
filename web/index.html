@@ -14,9 +14,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="冷蔵庫番">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="icons/Icon-512.png">
+  <link rel="apple-touch-icon" href="./icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="./icons/Icon-512.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
@@ -115,12 +115,12 @@
   <!-- ローディング画面 -->
   <div id="loading-screen" class="loading-screen">
     <div class="app-icon">
-      <img src="icons/Icon-192.png" alt="冷蔵庫番" onerror="this.style.display='none'">
+      <img src="./icons/Icon-192.png" alt="冷蔵庫番" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🧊</text></svg>'">
     </div>
     <div class="app-name">冷蔵庫番</div>
     <div class="app-tagline">食品の賞味期限を簡単管理</div>
     <div class="loading-spinner"></div>
-    <div class="loading-text">読み込み中...</div>
+    <div class="loading-text">起動中...</div>
   </div>
 
   <script>
@@ -131,29 +131,20 @@
         loadingScreen.classList.add('fade-out');
         setTimeout(() => {
           loadingScreen.style.display = 'none';
-        }, 500);
+        }, 300);
       }
     }
 
-    // ローディング進捗表示（シンプル版）
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-      progress += 15;
+    // シンプルなローディング表示（パーセント表示を削除）
+    const loadingStates = ['起動中...', '準備中...', 'もうすぐ...'];
+    let stateIndex = 0;
+    const loadingInterval = setInterval(() => {
+      stateIndex = (stateIndex + 1) % loadingStates.length;
       const loadingText = document.querySelector('.loading-text');
-      if (loadingText && progress <= 90) {
-        loadingText.textContent = '読み込み中... ' + progress + '%';
+      if (loadingText) {
+        loadingText.textContent = loadingStates[stateIndex];
       }
-      if (progress >= 90) {
-        clearInterval(progressInterval);
-      }
-    }, 500);
-
-    // Service Worker登録（キャッシュ用）- 一時的に無効化
-    // if ('serviceWorker' in navigator) {
-    //   window.addEventListener('load', function() {
-    //     navigator.serviceWorker.register('flutter_service_worker.js');
-    //   });
-    // }
+    }, 1500);
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
@@ -161,19 +152,15 @@
   <script>
     // Flutterアプリの読み込み完了を監視
     window.addEventListener('flutter-first-frame', function() {
-      clearInterval(progressInterval);
-      const loadingText = document.querySelector('.loading-text');
-      if (loadingText) {
-        loadingText.textContent = '完了！';
-      }
-      setTimeout(hideLoadingScreen, 200);
+      clearInterval(loadingInterval);
+      hideLoadingScreen();
     });
 
-    // フォールバック：10秒後に強制的にローディング画面を非表示
+    // フォールバック：5秒後に強制的にローディング画面を非表示（短縮）
     setTimeout(function() {
-      clearInterval(progressInterval);
+      clearInterval(loadingInterval);
       hideLoadingScreen();
-    }, 10000);
+    }, 5000);
   </script>
 </body>
 </html>

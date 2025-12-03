@@ -28,9 +28,16 @@ import 'screens/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Supabase初期化
+  // Supabase初期化（タイムアウト付き）
   try {
-    await SupabaseConfig.initialize();
+    await SupabaseConfig.initialize().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        if (kDebugMode) {
+          print('⚠️ Supabase初期化タイムアウト（5秒）');
+        }
+      },
+    );
     if (kDebugMode) {
       print('✅ Supabase初期化成功');
     }
@@ -145,19 +152,20 @@ class _MainNavigationState extends State<MainNavigation> {
 
   Future<void> _loadData() async {
     try {
-      // Supabaseからデータ読み込み（常にサーバーデータを優先）
-      final foods = await _supabaseService.getFoods();
-      final stocks = await _supabaseService.getStocks();
-      final shoppingItems = await _supabaseService.getShoppingItems();
-      final templates = await _supabaseService.getCustomTemplates();
+      // Supabaseからデータ読み込み（タイムアウト付き - 並列で高速化）
+      final results = await Future.wait([
+        _supabaseService.getFoods().timeout(const Duration(seconds: 8), onTimeout: () => <FoodItem>[]),
+        _supabaseService.getStocks().timeout(const Duration(seconds: 8), onTimeout: () => <StockItem>[]),
+        _supabaseService.getShoppingItems().timeout(const Duration(seconds: 8), onTimeout: () => <ShoppingItem>[]),
+        _supabaseService.getCustomTemplates().timeout(const Duration(seconds: 8), onTimeout: () => <FoodTemplate>[]),
+      ]);
 
       if (mounted) {
         setState(() {
-          // Supabaseのデータを優先（RLSによりユーザーごとに分離されている）
-          _foods = foods;
-          _stocks = stocks;
-          _shoppingItems = shoppingItems;
-          _customTemplates = templates;
+          _foods = results[0] as List<FoodItem>;
+          _stocks = results[1] as List<StockItem>;
+          _shoppingItems = results[2] as List<ShoppingItem>;
+          _customTemplates = results[3] as List<FoodTemplate>;
           _isInitialLoading = false;
         });
 
@@ -177,7 +185,7 @@ class _MainNavigationState extends State<MainNavigation> {
           _foods = StorageService.loadFoods();
           _customTemplates = StorageService.loadCustomTemplates();
           _stocks = StorageService.loadStocks();
-          _shoppingItems = []; // ローカルストレージには保存しない（買い物リストはSupabase専用）
+          _shoppingItems = [];
           _isInitialLoading = false;
         });
       }
