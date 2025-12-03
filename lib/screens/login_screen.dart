@@ -53,8 +53,10 @@ class _LoginScreenState extends State<LoginScreen> {
       
       final uri = Uri.parse(currentUrl);
       print('🔍 クエリパラメータ: ${uri.queryParameters}');
+      print('🔍 クエリ文字列: ${uri.query}');
       
-      final isDemoMode = uri.queryParameters['demo'] == 'true';
+      // 厳密なチェック: ?demo=true のみ（?や空パラメータは除外）
+      final isDemoMode = uri.queryParameters['demo'] == 'true' && uri.query.isNotEmpty;
       print('🔍 デモモード判定: $isDemoMode');
       
       // チェック済みフラグを立てる
@@ -214,16 +216,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // アプリアイコン - 冷蔵庫
+                  // アプリアイコン画像
                   Container(
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
-                      ),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -233,8 +231,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                    child: const Center(
-                      child: Text('🧊', style: TextStyle(fontSize: 60)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.asset(
+                        'assets/icons/app_icon.png',
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          // 画像読み込みエラー時はフォールバック絵文字
+                          return const Center(
+                            child: Text('🧊', style: TextStyle(fontSize: 60)),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),

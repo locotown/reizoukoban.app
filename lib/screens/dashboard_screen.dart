@@ -177,10 +177,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 if (kIsWeb) {
                   final currentUrl = html.window.location.href;
                   final uri = Uri.parse(currentUrl);
-                  if (uri.queryParameters['demo'] == 'true') {
-                    // ?demo=true を削除して通常モードに戻す
-                    final newUri = uri.replace(queryParameters: {});
-                    html.window.history.replaceState(null, '', newUri.toString());
+                  if (uri.queryParameters.containsKey('demo')) {
+                    // クエリパラメータを完全に削除（?も含めて削除）
+                    final cleanUrl = '${uri.origin}${uri.path}';
+                    html.window.history.replaceState(null, '', cleanUrl);
+                    print('✅ ログアウト: URLをクリア $currentUrl → $cleanUrl');
                   }
                 }
               } catch (e) {
