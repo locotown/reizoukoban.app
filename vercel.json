@@ -2,8 +2,20 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/app",
+      "destination": "/build/web/index.html"
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/build/web/index.html"
+    },
+    {
+      "source": "/",
+      "destination": "/landing/index.html"
+    },
+    {
+      "source": "/:path((?!app|build).*)",
+      "destination": "/landing/:path*"
     }
   ],
   "headers": [

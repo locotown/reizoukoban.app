@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/supabase_auth_service.dart';
 import 'signup_screen.dart';
+
+// Web専用: URLクエリパラメータ取得用
+import 'dart:html' as html show window;
 
 /// ログイン画面
 class LoginScreen extends StatefulWidget {
@@ -18,6 +22,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkDemoMode();
+  }
+
+  /// デモモード検出と自動ログイン
+  Future<void> _checkDemoMode() async {
+    if (!kIsWeb) return;  // Web以外では実行しない
+    
+    try {
+      final uri = Uri.parse(html.window.location.href);
+      final isDemoMode = uri.queryParameters['demo'] == 'true';
+      
+      if (isDemoMode) {
+        // デモモードフラグが検出されたら自動的に匿名ログイン実行
+        await Future.delayed(const Duration(milliseconds: 500));  // UI表示待機
+        if (mounted) {
+          await _handleAnonymousLogin();
+        }
+      }
+    } catch (e) {
+      // URLパラメータ取得エラー（モバイルビルドでは発生する可能性あり）
+      debugPrint('URLパラメータ取得エラー: $e');
+    }
+  }
 
   @override
   void dispose() {
