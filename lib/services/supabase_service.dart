@@ -15,21 +15,30 @@ class SupabaseService {
   Future<List<FoodItem>> getFoods() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return [];
+      print('🔍 [getFoods] User ID: $userId');
+      
+      if (userId == null) {
+        print('⚠️ [getFoods] User ID is null, returning empty list');
+        return [];
+      }
 
+      print('📡 [getFoods] Fetching foods from Supabase...');
       final response = await _supabase
           .from('foods')
           .select()
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
-      return (response as List)
+      print('✅ [getFoods] Response received: ${response.length} items');
+      
+      final foods = (response as List)
           .map((json) => FoodItem.fromSupabase(json))
           .toList();
+      
+      print('✅ [getFoods] Parsed ${foods.length} foods');
+      return foods;
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ getFoods error: $e');
-      }
+      print('❌ [getFoods] Error: $e');
       return [];
     }
   }
@@ -135,21 +144,30 @@ class SupabaseService {
   Future<List<StockItem>> getStocks() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return [];
+      print('🔍 [getStocks] User ID: $userId');
+      
+      if (userId == null) {
+        print('⚠️ [getStocks] User ID is null, returning empty list');
+        return [];
+      }
 
+      print('📡 [getStocks] Fetching stocks from Supabase...');
       final response = await _supabase
           .from('stocks')
           .select()
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
-      return (response as List)
+      print('✅ [getStocks] Response received: ${response.length} items');
+      
+      final stocks = (response as List)
           .map((json) => StockItem.fromSupabase(json))
           .toList();
+      
+      print('✅ [getStocks] Parsed ${stocks.length} stocks');
+      return stocks;
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ getStocks error: $e');
-      }
+      print('❌ [getStocks] Error: $e');
       return [];
     }
   }
