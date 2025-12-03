@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/food_item.dart';
 import '../models/food_template.dart';
 import '../models/stock_item.dart';
+import '../models/shopping_item.dart';
 import '../supabase_config.dart';
 
 /// Supabaseデータ同期サービス
@@ -354,6 +355,130 @@ class SupabaseService {
             // データ変更時に最新データを取得
             final templates = await getCustomTemplates();
             onUpdate(templates);
+          },
+        )
+        .subscribe();
+
+    return channel;
+  }
+
+  // ===== Shopping List (買い物リスト) =====
+
+  /// 買い物リスト一覧を取得
+  Future<List<ShoppingItem>> getShoppingItems() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      print('🔍 [getShoppingItems] User ID: $userId');
+      
+      if (userId == null) {
+        print('⚠️ [getShoppingItems] User ID is null, returning empty list');
+        return [];
+      }
+
+      print('📡 [getShoppingItems] Fetching shopping items from Supabase...');
+      final response = await _supabase
+          .from('shopping_list')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      print('✅ [getShoppingItems] Response received: ${response.length} items');
+      
+      final items = (response as List)
+          .map((json) => ShoppingItem.fromSupabase(json))
+          .toList();
+      
+      print('✅ [getShoppingItems] Parsed ${items.length} shopping items');
+      return items;
+    } catch (e) {
+      print('❌ [getShoppingItems] Error: $e');
+      return [];
+    }
+  }
+
+  /// 買い物リストにアイテムを追加
+  Future<bool> addShoppingItem(ShoppingItem item) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return false;
+
+      await _supabase.from('shopping_list').insert({
+        'id': item.id,
+        'user_id': userId,
+        'name': item.name,
+        'icon': item.icon,
+        'category_id': item.categoryId,
+        'is_purchased': item.isPurchased,
+        'source': item.source.name,
+        'source_id': item.sourceId,
+        'memo': item.memo,
+        'created_at': item.createdAt.toIso8601String(),
+        'updated_at': item.updatedAt.toIso8601String(),
+      });
+
+      return true;
+    } catch (e) {
+      print('❌ Error adding shopping item: $e');
+      return false;
+    }
+  }
+
+  /// 買い物リストアイテムを更新
+  Future<bool> updateShoppingItem(ShoppingItem item) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return false;
+
+      await _supabase.from('shopping_list').update({
+        'name': item.name,
+        'icon': item.icon,
+        'category_id': item.categoryId,
+        'is_purchased': item.isPurchased,
+        'source': item.source.name,
+        'source_id': item.sourceId,
+        'memo': item.memo,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', item.id).eq('user_id', userId);
+
+      return true;
+    } catch (e) {
+      print('❌ Error updating shopping item: $e');
+      return false;
+    }
+  }
+
+  /// 買い物リストアイテムを削除
+  Future<bool> deleteShoppingItem(String id) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return false;
+
+      await _supabase
+          .from('shopping_list')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId);
+
+      return true;
+    } catch (e) {
+      print('❌ Error deleting shopping item: $e');
+      return false;
+    }
+  }
+
+  /// 買い物リストの変更を監視
+  RealtimeChannel watchShoppingItems(Function(List<ShoppingItem>) onData) {
+    final userId = _supabase.auth.currentUser?.id;
+    
+    final channel = _supabase
+        .channel('shopping_list_changes')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'shopping_list',
+          callback: (payload) async {
+            final items = await getShoppingItems();
+            onData(items);
           },
         )
         .subscribe();

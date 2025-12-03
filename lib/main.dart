@@ -8,6 +8,7 @@ import 'supabase_config.dart';
 import 'models/food_item.dart';
 import 'models/food_template.dart';
 import 'models/stock_item.dart';
+import 'models/shopping_item.dart';
 
 // Services
 import 'services/storage_service.dart';
@@ -20,6 +21,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // Screens
 import 'screens/dashboard_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/shopping_list_screen.dart';
 import 'screens/stock_screen.dart';
 import 'screens/login_screen.dart';
 
@@ -108,6 +110,7 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   List<FoodItem> _foods = [];
   List<FoodTemplate> _customTemplates = [];
+  List<ShoppingItem> _shoppingItems = [];
   List<StockItem> _stocks = [];
   
   bool _isInitialLoading = true;
@@ -118,6 +121,7 @@ class _MainNavigationState extends State<MainNavigation> {
   // リアルタイムチャンネル
   RealtimeChannel? _foodsChannel;
   RealtimeChannel? _stocksChannel;
+  RealtimeChannel? _shoppingChannel;
   RealtimeChannel? _templatesChannel;
 
   @override
@@ -134,6 +138,7 @@ class _MainNavigationState extends State<MainNavigation> {
     // チャンネル購読解除
     if (_foodsChannel != null) _supabaseService.unsubscribe(_foodsChannel!);
     if (_stocksChannel != null) _supabaseService.unsubscribe(_stocksChannel!);
+    if (_shoppingChannel != null) _supabaseService.unsubscribe(_shoppingChannel!);
     if (_templatesChannel != null) _supabaseService.unsubscribe(_templatesChannel!);
     super.dispose();
   }
@@ -143,6 +148,7 @@ class _MainNavigationState extends State<MainNavigation> {
       // Supabaseからデータ読み込み（常にサーバーデータを優先）
       final foods = await _supabaseService.getFoods();
       final stocks = await _supabaseService.getStocks();
+      final shoppingItems = await _supabaseService.getShoppingItems();
       final templates = await _supabaseService.getCustomTemplates();
 
       if (mounted) {
@@ -150,6 +156,7 @@ class _MainNavigationState extends State<MainNavigation> {
           // Supabaseのデータを優先（RLSによりユーザーごとに分離されている）
           _foods = foods;
           _stocks = stocks;
+          _shoppingItems = shoppingItems;
           _customTemplates = templates;
           _isInitialLoading = false;
         });
@@ -170,6 +177,7 @@ class _MainNavigationState extends State<MainNavigation> {
           _foods = StorageService.loadFoods();
           _customTemplates = StorageService.loadCustomTemplates();
           _stocks = StorageService.loadStocks();
+          _shoppingItems = []; // ローカルストレージには保存しない（買い物リストはSupabase専用）
           _isInitialLoading = false;
         });
       }
@@ -191,6 +199,13 @@ class _MainNavigationState extends State<MainNavigation> {
       if (mounted) {
         setState(() => _stocks = stocks);
         StorageService.saveStocks(stocks);
+      }
+    });
+
+    // 買い物リストのリアルタイム監視
+    _shoppingChannel = _supabaseService.watchShoppingItems((items) {
+      if (mounted) {
+        setState(() => _shoppingItems = items);
       }
     });
 
@@ -221,6 +236,11 @@ class _MainNavigationState extends State<MainNavigation> {
     // Supabase同期はリアルタイムリスナーが自動処理
   }
 
+  void _updateShoppingItems(List<ShoppingItem> items) {
+    setState(() => _shoppingItems = items);
+    // 買い物リストはSupabase専用のためローカルストレージには保存しない
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isInitialLoading) {
@@ -238,8 +258,8 @@ class _MainNavigationState extends State<MainNavigation> {
       );
     }
 
-    // 買い物が必要なアイテム数（バッジ用）
-    final needShoppingCount = _stocks.where((s) => s.needsToBuy).length;
+    // 買い物リストの未購入アイテム数（バッジ用）
+    final needShoppingCount = _shoppingItems.where((item) => !item.isPurchased).length;
 
     return Scaffold(
       body: IndexedStack(
@@ -248,6 +268,10 @@ class _MainNavigationState extends State<MainNavigation> {
           DashboardScreen(
             foods: _foods,
             onFoodsChanged: _updateFoods,
+            onAddToShoppingList: (item) {
+              final updated = [..._shoppingItems, item];
+              _updateShoppingItems(updated);
+            },
           ),
           HomeScreen(
             foods: _foods,
@@ -255,9 +279,19 @@ class _MainNavigationState extends State<MainNavigation> {
             onFoodsChanged: _updateFoods,
             onTemplatesChanged: _updateCustomTemplates,
           ),
+          ShoppingListScreen(
+            shoppingItems: _shoppingItems,
+            stocks: _stocks,
+            onShoppingItemsChanged: _updateShoppingItems,
+            onStocksChanged: _updateStocks,
+          ),
           StockScreen(
             stocks: _stocks,
             onStocksChanged: _updateStocks,
+            onAddToShoppingList: (item) {
+              final updated = [..._shoppingItems, item];
+              _updateShoppingItems(updated);
+            },
           ),
         ],
       ),
@@ -280,7 +314,8 @@ class _MainNavigationState extends State<MainNavigation> {
               children: [
                 _buildNavItem(0, Icons.home_rounded, 'ホーム'),
                 _buildNavItem(1, Icons.add_circle_outline, '登録'),
-                _buildNavItemWithBadge(2, Icons.shopping_cart_outlined, 'ストック', needShoppingCount),
+                _buildNavItemWithBadge(2, Icons.shopping_cart, '買い物', needShoppingCount),
+                _buildNavItem(3, Icons.inventory_2_outlined, 'ストック'),
               ],
             ),
           ),

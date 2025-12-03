@@ -20,15 +20,21 @@ import '../widgets/mini_tag.dart';
 import '../widgets/sort_button.dart';
 import '../widgets/food_card.dart';
 
+// Additional imports
+import '../models/shopping_item.dart';
+import 'package:uuid/uuid.dart';
+
 /// Dashboard画面（食品一覧表示）
 class DashboardScreen extends StatefulWidget {
   final List<FoodItem> foods;
   final Function(List<FoodItem>) onFoodsChanged;
+  final Function(ShoppingItem)? onAddToShoppingList;
 
   const DashboardScreen({
     super.key,
     required this.foods,
     required this.onFoodsChanged,
+    this.onAddToShoppingList,
   });
 
   @override
@@ -332,6 +338,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 category: category,
                 onTap: () => _showEditDialog(food, category),
                 onDelete: () => _deleteFood(food.id),
+                onLongPress: () => _showFoodOptions(food, category),
               );
             }),
         ],
@@ -516,5 +523,142 @@ class _DashboardScreenState extends State<DashboardScreen>
                 color: color, fontWeight: FontWeight.w600, fontSize: 13)),
       ),
     );
+  }
+
+  /// 食材オプションメニューを表示
+  void _showFoodOptions(FoodItem food, Category category) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: category.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Text(food.icon, style: const TextStyle(fontSize: 32)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        food.name,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        category.name,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // 買い物リストに追加ボタン
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3498DB).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.shopping_cart,
+                  color: Color(0xFF3498DB),
+                ),
+              ),
+              title: const Text('買い物リストに追加'),
+              subtitle: const Text('同じ商品を買いたい時に便利'),
+              onTap: () {
+                Navigator.pop(context);
+                _addToShoppingList(food);
+              },
+            ),
+            const SizedBox(height: 8),
+            // 削除ボタン
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE74C3C).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.delete,
+                  color: Color(0xFFE74C3C),
+                ),
+              ),
+              title: const Text('削除'),
+              subtitle: const Text('この食材を削除します'),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteFood(food.id);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 食材を買い物リストに追加
+  void _addToShoppingList(FoodItem food) async {
+    final shoppingItem = ShoppingItem(
+      id: const Uuid().v4(),
+      name: food.name,
+      icon: food.icon,
+      categoryId: food.categoryId,
+      source: ShoppingSource.food,
+      sourceId: food.id,
+    );
+
+    // Supabaseに保存
+    await _supabaseService.addShoppingItem(shoppingItem);
+
+    // コールバックを呼び出し
+    if (widget.onAddToShoppingList != null) {
+      widget.onAddToShoppingList!(shoppingItem);
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${food.icon} ${food.name} を買い物リストに追加しました'),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

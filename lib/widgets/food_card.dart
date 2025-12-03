@@ -9,6 +9,7 @@ class FoodCard extends StatelessWidget {
   final Category category;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback? onLongPress;
 
   const FoodCard({
     super.key,
@@ -16,6 +17,7 @@ class FoodCard extends StatelessWidget {
     required this.category,
     required this.onTap,
     required this.onDelete,
+    this.onLongPress,
   });
 
   @override
@@ -39,6 +41,7 @@ class FoodCard extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       child: GestureDetector(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),

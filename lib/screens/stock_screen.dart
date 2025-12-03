@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 // Models
 import '../models/stock_item.dart';
+import '../models/shopping_item.dart';
 
 // Constants
 import '../constants/stock_categories.dart';
@@ -14,11 +16,13 @@ import '../services/supabase_service.dart';
 class StockScreen extends StatefulWidget {
   final List<StockItem> stocks;
   final Function(List<StockItem>) onStocksChanged;
+  final Function(ShoppingItem)? onAddToShoppingList;
 
   const StockScreen({
     super.key,
     required this.stocks,
     required this.onStocksChanged,
+    this.onAddToShoppingList,
   });
 
   @override
@@ -332,6 +336,7 @@ class _StockScreenState extends State<StockScreen>
       onDismissed: (_) => _deleteStock(stock.id),
       child: GestureDetector(
         onTap: () => _showEditStockDialog(stock, category),
+        onLongPress: () => _showStockOptions(stock, category),
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
@@ -1075,5 +1080,143 @@ class _StockScreenState extends State<StockScreen>
         ),
       ),
     );
+  }
+
+  /// ストックオプションメニューを表示
+  void _showStockOptions(StockItem stock, StockCategory category) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: category.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Text(stock.icon, style: const TextStyle(fontSize: 32)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        stock.name,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${category.name} • ${stock.statusText}',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // 買い物リストに追加ボタン
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3498DB).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.shopping_cart,
+                  color: Color(0xFF3498DB),
+                ),
+              ),
+              title: const Text('買い物リストに追加'),
+              subtitle: const Text('買い忘れを防ぐ'),
+              onTap: () {
+                Navigator.pop(context);
+                _addStockToShoppingList(stock);
+              },
+            ),
+            const SizedBox(height: 8),
+            // 削除ボタン
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE74C3C).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.delete,
+                  color: Color(0xFFE74C3C),
+                ),
+              ),
+              title: const Text('削除'),
+              subtitle: const Text('このストックを削除します'),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteStock(stock.id);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ストックを買い物リストに追加
+  void _addStockToShoppingList(StockItem stock) async {
+    final shoppingItem = ShoppingItem(
+      id: const Uuid().v4(),
+      name: stock.name,
+      icon: stock.icon,
+      categoryId: stock.categoryId,
+      source: ShoppingSource.stock,
+      sourceId: stock.id,
+      memo: stock.memo,
+    );
+
+    // Supabaseに保存
+    await _supabaseService.addShoppingItem(shoppingItem);
+
+    // コールバックを呼び出し
+    if (widget.onAddToShoppingList != null) {
+      widget.onAddToShoppingList!(shoppingItem);
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${stock.icon} ${stock.name} を買い物リストに追加しました'),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }
