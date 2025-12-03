@@ -44,7 +44,7 @@ class _StockScreenState extends State<StockScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 1, vsync: this); // 買い物リストタブを削除（フッターに統合）
   }
 
   @override
@@ -155,43 +155,8 @@ class _StockScreenState extends State<StockScreen>
             ),
           const SizedBox(width: 4),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFF2196F3),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF2196F3),
-          indicatorWeight: 3,
-          tabs: const [
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inventory_2, size: 18),
-                  SizedBox(width: 6),
-                  Text('ストック', style: TextStyle(fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.shopping_cart, size: 18),
-                  SizedBox(width: 6),
-                  Text('買い物リスト', style: TextStyle(fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildStockListTab(),
-          _buildShoppingListTab(),
-        ],
-      ),
+      body: _buildStockListTab(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddStockDialog(),
         backgroundColor: const Color(0xFF2196F3),
@@ -389,6 +354,17 @@ class _StockScreenState extends State<StockScreen>
                   ],
                 ),
               ),
+              // 買い物カートアイコン（ワンタップで買い物リストに追加）
+              IconButton(
+                onPressed: () => _addStockToShoppingList(stock),
+                icon: const Icon(
+                  Icons.shopping_cart_outlined,
+                  size: 20,
+                  color: Color(0xFF3498DB),
+                ),
+                tooltip: '買い物リストに追加',
+              ),
+              const SizedBox(width: 4),
               // ステータス変更ボタン
               GestureDetector(
                 onTap: () => _cycleStatus(stock),
@@ -442,155 +418,6 @@ class _StockScreenState extends State<StockScreen>
   }
 
   // 買い物リストタブ
-  Widget _buildShoppingListTab() {
-    final urgentItems = _stocks.where((s) => s.isUrgent).toList();
-    final lowItems =
-        _stocks.where((s) => s.status == StockStatus.low).toList();
-
-    if (urgentItems.isEmpty && lowItems.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('✅', style: TextStyle(fontSize: 64)),
-            const SizedBox(height: 16),
-            Text(
-              '買い物リストは空です',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'すべてのストックが十分です',
-              style: TextStyle(color: Colors.grey[400], fontSize: 13),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 今すぐ必要
-          if (urgentItems.isNotEmpty) ...[
-            _buildShoppingSection(
-              '🔴 今すぐ必要',
-              urgentItems,
-              const Color(0xFFE53935),
-            ),
-            const SizedBox(height: 16),
-          ],
-          // そろそろ必要
-          if (lowItems.isNotEmpty) ...[
-            _buildShoppingSection(
-              '🟡 そろそろ必要',
-              lowItems,
-              const Color(0xFFFF9800),
-            ),
-          ],
-          const SizedBox(height: 80), // FABの余白
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShoppingSection(
-      String title, List<StockItem> items, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '$title（${items.length}件）',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () => _markAsPurchased(items),
-              icon: const Icon(Icons.check_circle, size: 18),
-              label: const Text('まとめて購入済み'),
-              style: TextButton.styleFrom(
-                foregroundColor: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final stock = entry.value;
-              final category = defaultStockCategories.firstWhere(
-                (c) => c.id == stock.categoryId,
-                orElse: () => defaultStockCategories.last,
-              );
-              return Column(
-                children: [
-                  ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: category.color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child:
-                            Text(stock.icon, style: const TextStyle(fontSize: 20)),
-                      ),
-                    ),
-                    title: Text(
-                      stock.name,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: stock.memo != null && stock.memo!.isNotEmpty
-                        ? Text(stock.memo!,
-                            style: TextStyle(
-                                color: Colors.grey[500], fontSize: 12))
-                        : null,
-                    trailing: IconButton(
-                      onPressed: () =>
-                          _updateStock(stock.copyWith(status: StockStatus.sufficient)),
-                      icon: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.check,
-                            color: Color(0xFF4CAF50), size: 20),
-                      ),
-                    ),
-                  ),
-                  if (index < items.length - 1)
-                    Divider(height: 1, color: Colors.grey[200]),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
   // アイテム追加ダイアログ
   void _showAddStockDialog() {
     String selectedCategoryId = defaultStockCategories.first.id;

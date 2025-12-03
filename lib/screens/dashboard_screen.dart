@@ -339,6 +339,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 onTap: () => _showEditDialog(food, category),
                 onDelete: () => _deleteFood(food.id),
                 onLongPress: () => _showFoodOptions(food, category),
+                onAddToShopping: () => _addToShoppingList(food),
               );
             }),
         ],

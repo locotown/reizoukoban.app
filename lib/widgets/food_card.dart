@@ -10,6 +10,7 @@ class FoodCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback? onLongPress;
+  final VoidCallback? onAddToShopping;
 
   const FoodCard({
     super.key,
@@ -18,6 +19,7 @@ class FoodCard extends StatelessWidget {
     required this.onTap,
     required this.onDelete,
     this.onLongPress,
+    this.onAddToShopping,
   });
 
   @override
@@ -92,6 +94,20 @@ class FoodCard extends StatelessWidget {
                   ],
                 ),
               ),
+              // 買い物カートアイコン（ワンタップで買い物リストに追加）
+              if (onAddToShopping != null)
+                IconButton(
+                  onPressed: onAddToShopping,
+                  icon: const Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 18,
+                    color: Color(0xFF3498DB),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: '買い物リストに追加',
+                ),
+              if (onAddToShopping != null) const SizedBox(width: 8),
               // ステータスバッジ
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
