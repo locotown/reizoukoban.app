@@ -35,34 +35,34 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 各ユーザーは自分のデータのみを見られます（RLS適用済み）
   Future<void> _checkDemoMode() async {
     if (!kIsWeb) {
-      debugPrint('🔍 デモモードチェック: Web以外のプラットフォーム');
+      print('🔍 デモモードチェック: Web以外のプラットフォーム');
       return;  // Web以外では実行しない
     }
     
     try {
       final currentUrl = html.window.location.href;
-      debugPrint('🔍 現在のURL: $currentUrl');
+      print('🔍 現在のURL: $currentUrl');
       
       final uri = Uri.parse(currentUrl);
-      debugPrint('🔍 クエリパラメータ: ${uri.queryParameters}');
+      print('🔍 クエリパラメータ: ${uri.queryParameters}');
       
       final isDemoMode = uri.queryParameters['demo'] == 'true';
-      debugPrint('🔍 デモモード: $isDemoMode');
+      print('🔍 デモモード判定: $isDemoMode');
       
       if (isDemoMode) {
-        debugPrint('✅ デモモード検出！自動匿名ログインを開始...');
+        print('✅ デモモード検出！自動匿名ログインを開始...');
         // デモモードフラグが検出されたら自動的に匿名ログイン実行
         await Future.delayed(const Duration(milliseconds: 800));  // UI表示待機
         if (mounted) {
-          debugPrint('🚀 匿名ログイン実行中...');
+          print('🚀 匿名ログイン実行中...');
           await _handleAnonymousLogin();
         }
       } else {
-        debugPrint('ℹ️ 通常モード（デモモードではない）');
+        print('ℹ️ 通常モード（デモモードではない）');
       }
     } catch (e) {
       // URLパラメータ取得エラー（モバイルビルドでは発生する可能性あり）
-      debugPrint('❌ URLパラメータ取得エラー: $e');
+      print('❌ URLパラメータ取得エラー: $e');
     }
   }
 
@@ -102,10 +102,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 匿名ログイン処理
   Future<void> _handleAnonymousLogin() async {
+    print('📝 匿名ログイン処理開始');
     setState(() => _isLoading = true);
 
     try {
+      print('🔐 Supabase匿名認証を実行...');
       await _authService.signInAnonymously();
+      print('✅ 匿名ログイン成功！');
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -116,6 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      print('❌ 匿名ログインエラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

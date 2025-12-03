@@ -17,18 +17,12 @@ class SupabaseAuthService {
   /// 匿名ログイン
   Future<AuthResponse> signInAnonymously() async {
     try {
-      if (kDebugMode) {
-        print('🔐 匿名ログイン開始...');
-      }
+      print('🔐 [AuthService] 匿名ログイン開始...');
       final response = await supabase.auth.signInAnonymously();
-      if (kDebugMode) {
-        print('✅ 匿名ログイン成功: ${response.user?.id}');
-      }
+      print('✅ [AuthService] 匿名ログイン成功: UserID=${response.user?.id}');
       return response;
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ 匿名ログインエラー: $e');
-      }
+      print('❌ [AuthService] 匿名ログインエラー: $e');
       rethrow;
     }
   }
