@@ -31,8 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// デモモード検出と自動ログイン
   /// 
-  /// ?demo=true の場合、匿名ログインを自動実行
-  /// 各ユーザーは自分のデータのみを見られます（RLS適用済み）
+  /// ?demo=true の場合、デモ専用アカウントで自動ログイン
+  /// デモアカウントにはサンプルデータがあらかじめ登録されています
   Future<void> _checkDemoMode() async {
     if (!kIsWeb) {
       print('🔍 デモモードチェック: Web以外のプラットフォーム');
@@ -50,12 +50,12 @@ class _LoginScreenState extends State<LoginScreen> {
       print('🔍 デモモード判定: $isDemoMode');
       
       if (isDemoMode) {
-        print('✅ デモモード検出！自動匿名ログインを開始...');
-        // デモモードフラグが検出されたら自動的に匿名ログイン実行
+        print('✅ デモモード検出！デモアカウントで自動ログイン開始...');
+        // デモモードフラグが検出されたら自動的にデモアカウントでログイン実行
         await Future.delayed(const Duration(milliseconds: 800));  // UI表示待機
         if (mounted) {
-          print('🚀 匿名ログイン実行中...');
-          await _handleAnonymousLogin();
+          print('🚀 デモアカウントログイン実行中...');
+          await _handleDemoLogin();
         }
       } else {
         print('ℹ️ 通常モード（デモモードではない）');
@@ -100,7 +100,51 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 匿名ログイン処理
+  // デモアカウントログイン処理
+  Future<void> _handleDemoLogin() async {
+    print('📝 デモアカウントログイン処理開始');
+    setState(() => _isLoading = true);
+
+    try {
+      // デモ専用アカウントの認証情報
+      const demoEmail = 'demo@reizoukoban.app';
+      const demoPassword = 'DemoReizoukoban2024!';
+      
+      print('🔐 デモアカウント認証を実行...');
+      await _authService.signInWithEmail(
+        email: demoEmail,
+        password: demoPassword,
+      );
+      print('✅ デモアカウントログイン成功！');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('デモモードでログインしました'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ デモアカウントログインエラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('デモモードのログインに失敗しました: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // 匿名ログイン処理（通常のテスト用）
   Future<void> _handleAnonymousLogin() async {
     print('📝 匿名ログイン処理開始');
     setState(() => _isLoading = true);
