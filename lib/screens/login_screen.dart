@@ -30,23 +30,39 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /// デモモード検出と自動ログイン
+  /// 
+  /// ?demo=true の場合、デモ専用アカウントで自動ログイン
+  /// デモアカウントにはサンプルデータがあらかじめ登録されています
   Future<void> _checkDemoMode() async {
-    if (!kIsWeb) return;  // Web以外では実行しない
+    if (!kIsWeb) {
+      print('🔍 デモモードチェック: Web以外のプラットフォーム');
+      return;  // Web以外では実行しない
+    }
     
     try {
-      final uri = Uri.parse(html.window.location.href);
+      final currentUrl = html.window.location.href;
+      print('🔍 現在のURL: $currentUrl');
+      
+      final uri = Uri.parse(currentUrl);
+      print('🔍 クエリパラメータ: ${uri.queryParameters}');
+      
       final isDemoMode = uri.queryParameters['demo'] == 'true';
+      print('🔍 デモモード判定: $isDemoMode');
       
       if (isDemoMode) {
-        // デモモードフラグが検出されたら自動的に匿名ログイン実行
-        await Future.delayed(const Duration(milliseconds: 500));  // UI表示待機
+        print('✅ デモモード検出！デモアカウントで自動ログイン開始...');
+        // デモモードフラグが検出されたら自動的にデモアカウントでログイン実行
+        await Future.delayed(const Duration(milliseconds: 800));  // UI表示待機
         if (mounted) {
-          await _handleAnonymousLogin();
+          print('🚀 デモアカウントログイン実行中...');
+          await _handleDemoLogin();
         }
+      } else {
+        print('ℹ️ 通常モード（デモモードではない）');
       }
     } catch (e) {
       // URLパラメータ取得エラー（モバイルビルドでは発生する可能性あり）
-      debugPrint('URLパラメータ取得エラー: $e');
+      print('❌ URLパラメータ取得エラー: $e');
     }
   }
 
@@ -84,12 +100,59 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 匿名ログイン処理
-  Future<void> _handleAnonymousLogin() async {
+  // デモアカウントログイン処理
+  Future<void> _handleDemoLogin() async {
+    print('📝 デモアカウントログイン処理開始');
     setState(() => _isLoading = true);
 
     try {
+      // デモ専用アカウントの認証情報
+      const demoEmail = 'demo@reizoukoban.app';
+      const demoPassword = 'DemoReizoukoban2024!';
+      
+      print('🔐 デモアカウント認証を実行...');
+      await _authService.signInWithEmail(
+        email: demoEmail,
+        password: demoPassword,
+      );
+      print('✅ デモアカウントログイン成功！');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('デモモードでログインしました'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ デモアカウントログインエラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('デモモードのログインに失敗しました: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // 匿名ログイン処理（通常のテスト用）
+  Future<void> _handleAnonymousLogin() async {
+    print('📝 匿名ログイン処理開始');
+    setState(() => _isLoading = true);
+
+    try {
+      print('🔐 Supabase匿名認証を実行...');
       await _authService.signInAnonymously();
+      print('✅ 匿名ログイン成功！');
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -100,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      print('❌ 匿名ログインエラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

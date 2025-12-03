@@ -1,0 +1,53 @@
+-- ============================================
+-- デモ用サンプルデータ作成スクリプト
+-- ============================================
+-- 注意: このスクリプトは特定のデモ用ユーザーIDでサンプルデータを作成します
+-- 実行前に、デモ用のユーザーを作成しておく必要があります
+
+-- デモ用ユーザーID（実際のデモユーザーIDに置き換えてください）
+-- 匿名ログインの場合、ユーザーIDは動的に生成されるため、
+-- 代わりに「デモ専用固定アカウント」を作成することを推奨します
+
+-- オプション1: デモ専用固定アカウント情報
+-- Email: demo@reizoukoban.app
+-- Password: Demo123456!
+-- このアカウントでログインすると、以下のサンプルデータが表示されます
+
+-- 以下のコメントを外して、実際のデモユーザーIDを設定してください
+-- DO $$
+-- DECLARE
+--   demo_user_id UUID := 'ここにデモユーザーのUUIDを設定';
+-- BEGIN
+--   -- サンプル食材データ
+--   INSERT INTO foods (user_id, name, icon, expiry_date, category, memo) VALUES
+--   (demo_user_id, '牛乳', '🥛', CURRENT_DATE + INTERVAL '3 days', '乳製品', '1リットル'),
+--   (demo_user_id, '卵', '🥚', CURRENT_DATE + INTERVAL '7 days', '卵', '10個入り'),
+--   (demo_user_id, 'りんご', '🍎', CURRENT_DATE + INTERVAL '5 days', '果物', '青森産'),
+--   (demo_user_id, 'レタス', '🥬', CURRENT_DATE + INTERVAL '2 days', '野菜', '新鮮'),
+--   (demo_user_id, '豚肉', '🥓', CURRENT_DATE + INTERVAL '1 day', '肉類', '200g');
+--
+--   -- サンプルストックデータ
+--   INSERT INTO stocks (user_id, name, icon, category_id, status, memo) VALUES
+--   (demo_user_id, '米', '🌾', 'grain', 'sufficient', '5kg'),
+--   (demo_user_id, '醤油', '🍶', 'seasoning', 'low', '残り少ない'),
+--   (demo_user_id, 'トイレットペーパー', '🧻', 'daily', 'sufficient', '12ロール'),
+--   (demo_user_id, 'シャンプー', '🧴', 'daily', 'low', '買い足し必要');
+--
+--   RAISE NOTICE 'デモデータの作成が完了しました';
+-- END $$;
+
+-- ============================================
+-- 推奨: デモ専用アカウントの作成手順
+-- ============================================
+-- 
+-- 1. Supabase Dashboard → Authentication → Users
+-- 2. "Add user" ボタンをクリック
+-- 3. Email: demo@reizoukoban.app
+-- 4. Password: Demo123456! (または任意の強力なパスワード)
+-- 5. "Confirm email" をONにする
+-- 6. ユーザー作成後、UUIDをコピーして上記のdemo_user_idに設定
+-- 7. このSQLスクリプトを実行
+--
+-- これにより、以下の2つのログイン方法が使えるようになります：
+-- - 匿名ログイン: 空のデータベースから開始
+-- - デモアカウント: サンプルデータが入った状態で開始

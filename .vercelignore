@@ -1,26 +1,39 @@
-# Flutter build artifacts
+# Vercel Ignore - 不要なファイルをデプロイから除外
+
+# Flutter開発ファイル
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
-# Keep build/web for deployment
-!build/web/
+.pub-cache/
+.pub/
 
-# IDE
+# ビルド元ファイル（publicにコピー済み）
+build/
+landing/
+
+# 開発ツール
 .idea/
 .vscode/
-*.swp
-*.swo
+*.iml
 
 # Git
 .git/
 .gitignore
 
-# OS
-.DS_Store
-Thumbs.db
+# プロジェクトファイル
+lib/
+test/
+android/
+ios/
+linux/
+macos/
+windows/
+web/
+pubspec.yaml
+pubspec.lock
+analysis_options.yaml
 
-# Misc
-*.log
-.env.local
-.env.*.local
+# ドキュメント
+*.md
+!README.md
