@@ -128,6 +128,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       print('❌ デモアカウントログインエラー: $e');
+      print('📧 試行したEmail: demo@reizoukoban.app');
+      print('🔑 エラーの種類: ${e.runtimeType}');
+      print('📝 エラーの詳細: ${e.toString()}');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
