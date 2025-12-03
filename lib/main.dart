@@ -290,8 +290,10 @@ class _MainNavigationState extends State<MainNavigation> {
           ShoppingListScreen(
             shoppingItems: _shoppingItems,
             stocks: _stocks,
+            foods: _foods,
             onShoppingItemsChanged: _updateShoppingItems,
             onStocksChanged: _updateStocks,
+            onFoodsChanged: _updateFoods,
           ),
           StockScreen(
             stocks: _stocks,

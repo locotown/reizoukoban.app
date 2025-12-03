@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 // Models
 import '../models/shopping_item.dart';
 import '../models/stock_item.dart';
+import '../models/food_item.dart';
 
 // Services
 import '../services/storage_service.dart';
@@ -13,15 +14,19 @@ import '../services/supabase_service.dart';
 class ShoppingListScreen extends StatefulWidget {
   final List<ShoppingItem> shoppingItems;
   final List<StockItem> stocks;
+  final List<FoodItem> foods;
   final Function(List<ShoppingItem>) onShoppingItemsChanged;
   final Function(List<StockItem>) onStocksChanged;
+  final Function(List<FoodItem>) onFoodsChanged;
 
   const ShoppingListScreen({
     super.key,
     required this.shoppingItems,
     required this.stocks,
+    required this.foods,
     required this.onShoppingItemsChanged,
     required this.onStocksChanged,
+    required this.onFoodsChanged,
   });
 
   @override
@@ -480,7 +485,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       return item;
     }).toList();
 
-    // 2. ストック由来のアイテムのみストックに追加/更新
+    // 2. ソース別に処理を分岐
     final stockItems = selectedItems.where((item) => item.source == ShoppingSource.stock).toList();
     final foodItems = selectedItems.where((item) => item.source == ShoppingSource.food).toList();
     final manualItems = selectedItems.where((item) => item.source == ShoppingSource.manual).toList();
@@ -490,19 +495,19 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     print('✍️ [購入済み処理] 手動追加: ${manualItems.length}件');
 
     final updatedStocks = List<StockItem>.from(widget.stocks);
+    final updatedFoods = List<FoodItem>.from(widget.foods);
     int stocksAddedCount = 0;
+    int foodsAddedCount = 0;
     
-    // ストック由来のアイテムのみ処理
+    // ストック由来のアイテム → ストックに反映
     for (final item in stockItems) {
       print('🔍 [購入済み処理] ストック処理中: ${item.name}');
       
-      // 同名のストックがあるか確認
       final existingStockIndex = updatedStocks.indexWhere(
         (stock) => stock.name.toLowerCase() == item.name.toLowerCase(),
       );
 
       if (existingStockIndex != -1) {
-        // 既存のストックを「十分」に更新
         print('✏️ [購入済み処理] 既存ストック更新: ${item.name}');
         final existingStock = updatedStocks[existingStockIndex];
         updatedStocks[existingStockIndex] = existingStock.copyWith(
@@ -511,7 +516,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         await _supabaseService.updateStock(updatedStocks[existingStockIndex]);
         stocksAddedCount++;
       } else {
-        // 新しいストックを作成
         print('➕ [購入済み処理] 新規ストック作成: ${item.name}');
         
         final newStock = StockItem(
@@ -528,11 +532,39 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       }
     }
 
+    // 食材由来のアイテム → 食材リストに新規追加（数量分）
+    for (final item in foodItems) {
+      print('🥬 [購入済み処理] 食材処理中: ${item.name} x ${item.quantity}');
+      
+      // 数量分だけ新しい食材を追加
+      for (int i = 0; i < item.quantity; i++) {
+        // 新しい食材を作成（賞味期限は1週間後をデフォルト）
+        final newFood = FoodItem(
+          id: const Uuid().v4(),
+          name: item.name,
+          icon: item.icon,
+          categoryId: _mapShoppingCategoryToFoodCategory(item.categoryId),
+          expirationDate: DateTime.now().add(const Duration(days: 7)),
+        );
+        updatedFoods.add(newFood);
+        await _supabaseService.addFood(newFood);
+        foodsAddedCount++;
+        print('➕ [購入済み処理] 食材追加 ${i + 1}/${item.quantity}: ${newFood.name}');
+      }
+    }
+
     // ストックが更新された場合のみ保存
     if (stocksAddedCount > 0) {
       StorageService.saveStocks(updatedStocks);
       widget.onStocksChanged(updatedStocks);
       print('📦 [購入済み処理] ストック更新: ${stocksAddedCount}件');
+    }
+
+    // 食材が追加された場合のみ保存
+    if (foodsAddedCount > 0) {
+      StorageService.saveFoods(updatedFoods);
+      widget.onFoodsChanged(updatedFoods);
+      print('🥬 [購入済み処理] 食材追加: ${foodsAddedCount}件');
     }
 
     // 買い物リストも更新
@@ -549,10 +581,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     // ユーザーへのフィードバック
     if (mounted) {
       String message;
-      if (stocksAddedCount > 0 && (foodItems.isNotEmpty || manualItems.isNotEmpty)) {
-        message = '${selectedItems.length}件を購入済みにしました（${stocksAddedCount}件をストックに追加）';
+      if (stocksAddedCount > 0 && foodsAddedCount > 0) {
+        message = '${selectedItems.length}件を購入済みに（ストック${stocksAddedCount}件、食材${foodsAddedCount}件追加）';
       } else if (stocksAddedCount > 0) {
         message = '${stocksAddedCount}件を購入済みにしてストックに追加しました';
+      } else if (foodsAddedCount > 0) {
+        message = '${foodsAddedCount}件を購入済みにして食材に追加しました';
       } else {
         message = '${selectedItems.length}件を購入済みにしました';
       }
@@ -568,6 +602,29 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     }
     
     print('✅ [購入済み処理] 完了');
+  }
+
+  /// 買い物リストのカテゴリIDを食材カテゴリIDにマッピング
+  String _mapShoppingCategoryToFoodCategory(String categoryId) {
+    // 食材カテゴリ: fridge, freezer, room
+    // ストックカテゴリ: daily, bath, cleaning, food_stock, other
+    switch (categoryId) {
+      case 'food_stock':
+      case '食品':
+        return 'fridge';  // 食品ストック → 冷蔵
+      case 'daily':
+      case '日用品':
+        return 'room';    // 日用品 → 常温
+      case '調味料':
+        return 'fridge';  // 調味料 → 冷蔵
+      case '乳製品':
+      case '卵・乳製品':
+        return 'fridge';  // 乳製品 → 冷蔵
+      case '冷凍':
+        return 'freezer'; // 冷凍 → 冷凍
+      default:
+        return 'fridge';  // デフォルトは冷蔵
+    }
   }
 
   /// 数量を増やす

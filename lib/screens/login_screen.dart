@@ -362,20 +362,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 匿名ログインボタン（テスト用）
+                  // デモアカウントでログインボタン
                   SizedBox(
                     height: 50,
                     child: OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _handleAnonymousLogin,
+                      onPressed: _isLoading ? null : _handleDemoLogin,
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFF2196F3)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      icon: const Icon(Icons.person_outline),
+                      icon: const Icon(Icons.play_circle_outline),
                       label: const Text(
-                        '匿名でログイン（テスト用）',
+                        'デモを試す',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
