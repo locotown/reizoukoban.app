@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="食品の賞味期限を管理するアプリ - 冷蔵庫番">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2196F3">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="冷蔵庫番">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/Icon-512.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>冷蔵庫番</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* ローディング画面のスタイル */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F5F7FA;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease-out;
+    }
+
+    .loading-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .app-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 24px;
+      background: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      margin-bottom: 24px;
+      animation: pulse 2s infinite;
+    }
+
+    .app-icon img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .app-name {
+      color: white;
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .app-tagline {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-text {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 12px;
+      margin-top: 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+  <!-- ローディング画面 -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="app-icon">
+      <img src="icons/Icon-192.png" alt="冷蔵庫番" onerror="this.style.display='none'">
+    </div>
+    <div class="app-name">冷蔵庫番</div>
+    <div class="app-tagline">食品の賞味期限を簡単管理</div>
+    <div class="loading-spinner"></div>
+    <div class="loading-text">読み込み中...</div>
+  </div>
+
+  <script>
+    // ローディング画面を非表示にする関数
+    function hideLoadingScreen() {
+      const loadingScreen = document.getElementById('loading-screen');
+      if (loadingScreen) {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 500);
+      }
+    }
+
+    // ローディング進捗表示（シンプル版）
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += 15;
+      const loadingText = document.querySelector('.loading-text');
+      if (loadingText && progress <= 90) {
+        loadingText.textContent = '読み込み中... ' + progress + '%';
+      }
+      if (progress >= 90) {
+        clearInterval(progressInterval);
+      }
+    }, 500);
+
+    // Service Worker登録（キャッシュ用）- 一時的に無効化
+    // if ('serviceWorker' in navigator) {
+    //   window.addEventListener('load', function() {
+    //     navigator.serviceWorker.register('flutter_service_worker.js');
+    //   });
+    // }
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    // Flutterアプリの読み込み完了を監視
+    window.addEventListener('flutter-first-frame', function() {
+      clearInterval(progressInterval);
+      const loadingText = document.querySelector('.loading-text');
+      if (loadingText) {
+        loadingText.textContent = '完了！';
+      }
+      setTimeout(hideLoadingScreen, 200);
+    });
+
+    // フォールバック：10秒後に強制的にローディング画面を非表示
+    setTimeout(function() {
+      clearInterval(progressInterval);
+      hideLoadingScreen();
+    }, 10000);
+  </script>
+</body>
+</html>

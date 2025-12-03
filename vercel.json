@@ -1,36 +1,7 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/css/(.*)",
-      "dest": "/landing/css/$1"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/landing/js/$1"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/landing/assets/$1"
-    },
-    {
-      "src": "/app$",
-      "dest": "/build/web/index.html"
-    },
-    {
-      "src": "/app/(.*)",
-      "dest": "/build/web/$1",
-      "continue": true
-    },
-    {
-      "src": "/app/(.*)",
-      "dest": "/build/web/index.html"
-    },
-    {
-      "src": "^/$",
-      "dest": "/landing/index.html"
-    }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",
