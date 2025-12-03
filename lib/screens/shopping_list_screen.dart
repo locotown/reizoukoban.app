@@ -460,6 +460,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   /// 選択したアイテムを購入済みにする
+  /// - ストック由来 → ストックに反映
+  /// - 食材由来 → 購入済みにするのみ（ストックには追加しない）
+  /// - 手動追加 → 購入済みにするのみ（ストックには追加しない）
   void _markSelectedAsPurchased() async {
     if (_selectedIds.isEmpty) return;
 
@@ -477,12 +480,21 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       return item;
     }).toList();
 
-    // 2. ストックに追加または更新
+    // 2. ストック由来のアイテムのみストックに追加/更新
+    final stockItems = selectedItems.where((item) => item.source == ShoppingSource.stock).toList();
+    final foodItems = selectedItems.where((item) => item.source == ShoppingSource.food).toList();
+    final manualItems = selectedItems.where((item) => item.source == ShoppingSource.manual).toList();
+
+    print('📦 [購入済み処理] ストック由来: ${stockItems.length}件');
+    print('🥬 [購入済み処理] 食材由来: ${foodItems.length}件');
+    print('✍️ [購入済み処理] 手動追加: ${manualItems.length}件');
+
     final updatedStocks = List<StockItem>.from(widget.stocks);
-    print('📦 [購入済み処理] 現在のストック数: ${updatedStocks.length}');
+    int stocksAddedCount = 0;
     
-    for (final item in selectedItems) {
-      print('🔍 [購入済み処理] 処理中: ${item.name}');
+    // ストック由来のアイテムのみ処理
+    for (final item in stockItems) {
+      print('🔍 [購入済み処理] ストック処理中: ${item.name}');
       
       // 同名のストックがあるか確認
       final existingStockIndex = updatedStocks.indexWhere(
@@ -497,12 +509,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           status: StockStatus.sufficient,
         );
         await _supabaseService.updateStock(updatedStocks[existingStockIndex]);
+        stocksAddedCount++;
       } else {
         // 新しいストックを作成
         print('➕ [購入済み処理] 新規ストック作成: ${item.name}');
-        print('   - カテゴリID: ${item.categoryId}');
-        print('   - アイコン: ${item.icon}');
-        print('   - メモ: ${item.memo}');
         
         final newStock = StockItem(
           id: const Uuid().v4(),
@@ -513,22 +523,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           memo: item.memo,
         );
         updatedStocks.add(newStock);
-        print('💾 [購入済み処理] Supabaseに保存: ${newStock.id}');
-        print('   - ストック総数: ${updatedStocks.length}');
-        
-        final result = await _supabaseService.addStock(newStock);
-        print('✅ [購入済み処理] Supabase保存結果: $result');
+        await _supabaseService.addStock(newStock);
+        stocksAddedCount++;
       }
     }
 
-    print('📦 [購入済み処理] 更新後のストック数: ${updatedStocks.length}');
-
-    // 3. ローカルストレージとSupabaseに保存
-    StorageService.saveStocks(updatedStocks);
-    print('💾 [購入済み処理] ローカルストレージに保存完了');
-    
-    widget.onStocksChanged(updatedStocks);
-    print('🔄 [購入済み処理] 親コンポーネントに通知完了');
+    // ストックが更新された場合のみ保存
+    if (stocksAddedCount > 0) {
+      StorageService.saveStocks(updatedStocks);
+      widget.onStocksChanged(updatedStocks);
+      print('📦 [購入済み処理] ストック更新: ${stocksAddedCount}件');
+    }
 
     // 買い物リストも更新
     widget.onShoppingItemsChanged(updatedShoppingItems);
@@ -541,10 +546,20 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       _selectedIds.clear();
     });
 
+    // ユーザーへのフィードバック
     if (mounted) {
+      String message;
+      if (stocksAddedCount > 0 && (foodItems.isNotEmpty || manualItems.isNotEmpty)) {
+        message = '${selectedItems.length}件を購入済みにしました（${stocksAddedCount}件をストックに追加）';
+      } else if (stocksAddedCount > 0) {
+        message = '${stocksAddedCount}件を購入済みにしてストックに追加しました';
+      } else {
+        message = '${selectedItems.length}件を購入済みにしました';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${selectedItems.length}件を購入済みにしてストックに追加しました'),
+          content: Text(message),
           backgroundColor: const Color(0xFF4CAF50),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,

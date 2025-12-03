@@ -233,17 +233,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
-                      child: Image.asset(
-                        'assets/icons/app_icon.png',
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          // 画像読み込みエラー時はフォールバック絵文字
-                          return const Center(
-                            child: Text('🧊', style: TextStyle(fontSize: 60)),
-                          );
-                        },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Image.asset(
+                          'assets/icons/app_icon.png',
+                          width: 104,
+                          height: 104,
+                          fit: BoxFit.contain,  // contain に変更して全体を表示
+                          errorBuilder: (context, error, stackTrace) {
+                            // 画像読み込みエラー時はフォールバック絵文字
+                            return const Center(
+                              child: Text('🧊', style: TextStyle(fontSize: 60)),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
