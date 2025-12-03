@@ -713,3 +713,121 @@ section {
     font-size: 1rem;
   }
 }
+
+/* ========== 新しいヒーローセクションスタイル ========== */
+.hero-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  align-items: center;
+  min-height: 500px;
+}
+
+.hero-text {
+  max-width: 600px;
+}
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: var(--spacing-md);
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  line-height: 1.6;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.hero-note {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.app-preview {
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+  border-radius: 24px;
+  padding: var(--spacing-xl);
+  text-align: center;
+  box-shadow: var(--shadow-hover);
+}
+
+.app-icon {
+  font-size: 8rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.app-preview-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  line-height: 1.8;
+}
+
+.feature-icon-large {
+  font-size: 6rem;
+  text-align: center;
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, var(--primary-light) 0%, white 100%);
+  border-radius: 16px;
+  margin: var(--spacing-md) auto;
+  max-width: 200px;
+}
+
+.logo-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    min-height: auto;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+  }
+
+  .app-preview {
+    padding: var(--spacing-md);
+  }
+
+  .app-icon {
+    font-size: 5rem;
+  }
+
+  .app-preview-text {
+    font-size: 1rem;
+  }
+
+  .feature-icon-large {
+    font-size: 4rem;
+    padding: var(--spacing-md);
+  }
+}

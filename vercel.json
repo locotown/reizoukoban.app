@@ -1,29 +1,34 @@
 {
   "version": 2,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/app",
-      "destination": "/build/web/index.html"
+      "src": "/css/(.*)",
+      "dest": "/landing/css/$1"
     },
     {
-      "source": "/app/(.*)",
-      "destination": "/build/web/$1"
+      "src": "/js/(.*)",
+      "dest": "/landing/js/$1"
     },
     {
-      "source": "/",
-      "destination": "/landing/index.html"
+      "src": "/assets/(.*)",
+      "dest": "/landing/assets/$1"
     },
     {
-      "source": "/css/(.*)",
-      "destination": "/landing/css/$1"
+      "src": "/app$",
+      "dest": "/build/web/index.html"
     },
     {
-      "source": "/js/(.*)",
-      "destination": "/landing/js/$1"
+      "src": "/app/(.*)",
+      "dest": "/build/web/$1",
+      "continue": true
     },
     {
-      "source": "/assets/(.*)",
-      "destination": "/landing/assets/$1"
+      "src": "/app/(.*)",
+      "dest": "/build/web/index.html"
+    },
+    {
+      "src": "^/$",
+      "dest": "/landing/index.html"
     }
   ],
   "headers": [
