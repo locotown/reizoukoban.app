@@ -111,4 +111,22 @@ class StorageService {
       print('全ローカルストレージクリアエラー: $e');
     }
   }
+
+  /// 古いキー（ユーザーID無し）のデータを削除
+  /// マイグレーション用：ユーザーID分離実装前のデータをクリア
+  static void clearLegacyData() {
+    try {
+      final legacyKeys = [
+        'fresh_alert_foods',
+        'fresh_alert_custom_templates',
+        'fresh_alert_stocks',
+      ];
+
+      for (final key in legacyKeys) {
+        html.window.localStorage.remove(key);
+      }
+    } catch (e) {
+      print('レガシーデータクリアエラー: $e');
+    }
+  }
 }

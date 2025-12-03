@@ -123,6 +123,8 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
+    // 古いキー（ユーザーID無し）のデータをクリア
+    StorageService.clearLegacyData();
     _loadData();
     _startRealtimeSync();
   }
@@ -138,16 +140,17 @@ class _MainNavigationState extends State<MainNavigation> {
 
   Future<void> _loadData() async {
     try {
-      // Supabaseからデータ読み込み
+      // Supabaseからデータ読み込み（常にサーバーデータを優先）
       final foods = await _supabaseService.getFoods();
       final stocks = await _supabaseService.getStocks();
       final templates = await _supabaseService.getCustomTemplates();
 
       if (mounted) {
         setState(() {
-          _foods = foods.isNotEmpty ? foods : StorageService.loadFoods();
-          _stocks = stocks.isNotEmpty ? stocks : StorageService.loadStocks();
-          _customTemplates = templates.isNotEmpty 
+          // Supabaseのデータを優先（RLSによりユーザーごとに分離されている）
+          _foods = foods;
+          _stocks = stocks;
+          _customTemplates = templates 
               ? templates 
               : StorageService.loadCustomTemplates();
           _isInitialLoading = false;

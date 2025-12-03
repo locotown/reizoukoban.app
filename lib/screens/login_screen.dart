@@ -34,22 +34,35 @@ class _LoginScreenState extends State<LoginScreen> {
   /// ?demo=true の場合、匿名ログインを自動実行
   /// 各ユーザーは自分のデータのみを見られます（RLS適用済み）
   Future<void> _checkDemoMode() async {
-    if (!kIsWeb) return;  // Web以外では実行しない
+    if (!kIsWeb) {
+      debugPrint('🔍 デモモードチェック: Web以外のプラットフォーム');
+      return;  // Web以外では実行しない
+    }
     
     try {
-      final uri = Uri.parse(html.window.location.href);
+      final currentUrl = html.window.location.href;
+      debugPrint('🔍 現在のURL: $currentUrl');
+      
+      final uri = Uri.parse(currentUrl);
+      debugPrint('🔍 クエリパラメータ: ${uri.queryParameters}');
+      
       final isDemoMode = uri.queryParameters['demo'] == 'true';
+      debugPrint('🔍 デモモード: $isDemoMode');
       
       if (isDemoMode) {
+        debugPrint('✅ デモモード検出！自動匿名ログインを開始...');
         // デモモードフラグが検出されたら自動的に匿名ログイン実行
-        await Future.delayed(const Duration(milliseconds: 500));  // UI表示待機
+        await Future.delayed(const Duration(milliseconds: 800));  // UI表示待機
         if (mounted) {
+          debugPrint('🚀 匿名ログイン実行中...');
           await _handleAnonymousLogin();
         }
+      } else {
+        debugPrint('ℹ️ 通常モード（デモモードではない）');
       }
     } catch (e) {
       // URLパラメータ取得エラー（モバイルビルドでは発生する可能性あり）
-      debugPrint('URLパラメータ取得エラー: $e');
+      debugPrint('❌ URLパラメータ取得エラー: $e');
     }
   }
 
