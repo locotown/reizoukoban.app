@@ -11,6 +11,7 @@ class ShoppingItem {
   final String name;
   final String icon;
   final String categoryId;
+  final int quantity;             // 数量（デフォルト1）
   final bool isPurchased;         // 購入済みフラグ
   final ShoppingSource source;    // 追加元
   final String? sourceId;         // 元のアイテムID（food_id または stock_id）
@@ -23,6 +24,7 @@ class ShoppingItem {
     required this.name,
     required this.icon,
     required this.categoryId,
+    this.quantity = 1,
     this.isPurchased = false,
     this.source = ShoppingSource.manual,
     this.sourceId,
@@ -41,6 +43,7 @@ class ShoppingItem {
     String? name,
     String? icon,
     String? categoryId,
+    int? quantity,
     bool? isPurchased,
     ShoppingSource? source,
     String? sourceId,
@@ -53,6 +56,7 @@ class ShoppingItem {
       name: name ?? this.name,
       icon: icon ?? this.icon,
       categoryId: categoryId ?? this.categoryId,
+      quantity: quantity ?? this.quantity,
       isPurchased: isPurchased ?? this.isPurchased,
       source: source ?? this.source,
       sourceId: sourceId ?? this.sourceId,
@@ -69,6 +73,7 @@ class ShoppingItem {
       name: json['name'] as String,
       icon: json['icon'] as String,
       categoryId: json['categoryId'] as String,
+      quantity: json['quantity'] as int? ?? 1,
       isPurchased: json['isPurchased'] as bool? ?? false,
       source: ShoppingSource.values.firstWhere(
         (e) => e.name == json['source'],
@@ -88,6 +93,7 @@ class ShoppingItem {
       'name': name,
       'icon': icon,
       'categoryId': categoryId,
+      'quantity': quantity,
       'isPurchased': isPurchased,
       'source': source.name,
       'sourceId': sourceId,
@@ -104,6 +110,7 @@ class ShoppingItem {
       name: json['name'] as String,
       icon: json['icon'] as String? ?? '🛒',
       categoryId: json['category_id'] as String? ?? '',
+      quantity: json['quantity'] as int? ?? 1,
       isPurchased: json['is_purchased'] as bool? ?? false,
       source: ShoppingSource.values.firstWhere(
         (e) => e.name == (json['source'] as String? ?? 'manual'),
@@ -127,6 +134,7 @@ class ShoppingItem {
       'name': name,
       'icon': icon,
       'category_id': categoryId,
+      'quantity': quantity,
       'is_purchased': isPurchased,
       'source': source.name,
       'source_id': sourceId,

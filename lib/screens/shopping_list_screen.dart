@@ -152,14 +152,27 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             color: isPurchased ? const Color(0xFF95A5A6) : const Color(0xFF3498DB),
           ),
           const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: isPurchased ? const Color(0xFF95A5A6) : const Color(0xFF2C3E50),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: isPurchased ? const Color(0xFF95A5A6) : const Color(0xFF2C3E50),
+              ),
             ),
           ),
+          // 購入済み一括削除ボタン
+          if (isPurchased && _purchasedItems.isNotEmpty)
+            TextButton.icon(
+              onPressed: _deletePurchasedItems,
+              icon: const Icon(Icons.delete_sweep, size: 18),
+              label: const Text('一括削除', style: TextStyle(fontSize: 12)),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFE74C3C),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+            ),
         ],
       ),
     );
@@ -198,13 +211,27 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             Text(item.icon, style: const TextStyle(fontSize: 24)),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                item.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2C3E50),
-                ),
+              child: Row(
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 数量表示
+                  Text(
+                    'x${item.quantity}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF3498DB),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -224,6 +251,24 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 数量減少ボタン
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline, size: 20),
+              color: const Color(0xFF95A5A6),
+              onPressed: () => _decreaseQuantity(item),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 4),
+            // 数量増加ボタン
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline, size: 20),
+              color: const Color(0xFF4CAF50),
+              onPressed: () => _increaseQuantity(item),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 8),
             // ソース表示
             _buildSourceBadge(item.source),
             const SizedBox(width: 8),
@@ -258,14 +303,29 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             Text(item.icon, style: const TextStyle(fontSize: 24)),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                item.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF95A5A6),
-                  decoration: TextDecoration.lineThrough,
-                ),
+              child: Row(
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF95A5A6),
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 数量表示
+                  Text(
+                    'x${item.quantity}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFBDC3C7),
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -412,6 +472,76 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     print('✅ [購入済み処理] 完了');
   }
 
+  /// 数量を増やす
+  void _increaseQuantity(ShoppingItem item) async {
+    final updatedItem = item.copyWith(quantity: item.quantity + 1);
+    final updatedItems = _shoppingItems.map((i) => i.id == item.id ? updatedItem : i).toList();
+    
+    widget.onShoppingItemsChanged(updatedItems);
+    await _supabaseService.updateShoppingItem(updatedItem);
+  }
+
+  /// 数量を減らす
+  void _decreaseQuantity(ShoppingItem item) async {
+    if (item.quantity <= 1) return; // 最小値は1
+    
+    final updatedItem = item.copyWith(quantity: item.quantity - 1);
+    final updatedItems = _shoppingItems.map((i) => i.id == item.id ? updatedItem : i).toList();
+    
+    widget.onShoppingItemsChanged(updatedItems);
+    await _supabaseService.updateShoppingItem(updatedItem);
+  }
+
+  /// 購入済みアイテムを一括削除
+  void _deletePurchasedItems() async {
+    // 確認ダイアログ
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('購入済みアイテムを削除'),
+        content: Text('購入済みの${_purchasedItems.length}件をすべて削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE74C3C),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // 購入済みアイテムを削除
+    final purchasedIds = _purchasedItems.map((item) => item.id).toList();
+    final updatedItems = _shoppingItems.where((item) => !item.isPurchased).toList();
+    
+    widget.onShoppingItemsChanged(updatedItems);
+
+    // Supabaseから削除
+    for (final id in purchasedIds) {
+      await _supabaseService.deleteShoppingItem(id);
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('購入済み${purchasedIds.length}件を削除しました'),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   /// アイテムを削除
   void _deleteItem(ShoppingItem item) async {
     final updatedItems = _shoppingItems.where((i) => i.id != item.id).toList();
@@ -435,6 +565,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   void _showAddItemDialog() {
     final nameController = TextEditingController();
     final memoController = TextEditingController();
+    final quantityController = TextEditingController(text: '1');
     String selectedIcon = '🛒';
     String selectedCategoryId = 'food_stock'; // デフォルトカテゴリ（ストックと同じID）
 
@@ -504,6 +635,18 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
                 const SizedBox(height: 16),
                 
+                // 数量入力
+                TextField(
+                  controller: quantityController,
+                  decoration: const InputDecoration(
+                    labelText: '数量',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.shopping_basket),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                
                 // メモ入力
                 TextField(
                   controller: memoController,
@@ -530,10 +673,19 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   return;
                 }
                 
+                final quantity = int.tryParse(quantityController.text.trim()) ?? 1;
+                if (quantity < 1) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('数量は1以上を入力してください')),
+                  );
+                  return;
+                }
+                
                 _addItem(
                   name: nameController.text.trim(),
                   icon: selectedIcon,
                   categoryId: selectedCategoryId,
+                  quantity: quantity,
                   memo: memoController.text.trim().isEmpty
                       ? null
                       : memoController.text.trim(),
@@ -558,6 +710,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     required String name,
     required String icon,
     required String categoryId,
+    int quantity = 1,
     String? memo,
   }) async {
     final newItem = ShoppingItem(
@@ -565,6 +718,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       name: name,
       icon: icon,
       categoryId: categoryId,
+      quantity: quantity,
       source: ShoppingSource.manual,
       memo: memo,
     );
