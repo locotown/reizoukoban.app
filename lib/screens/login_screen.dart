@@ -30,6 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /// デモモード検出と自動ログイン
+  /// 
+  /// ?demo=true の場合、匿名ログインを自動実行
+  /// 各ユーザーは自分のデータのみを見られます（RLS適用済み）
   Future<void> _checkDemoMode() async {
     if (!kIsWeb) return;  // Web以外では実行しない
     
