@@ -324,6 +324,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         .where((item) => _selectedIds.contains(item.id))
         .toList();
 
+    print('🛒 [購入済み処理] 選択されたアイテム: ${selectedItems.length}件');
+
     // 1. 買い物リストを購入済みに更新
     final updatedShoppingItems = _shoppingItems.map((item) {
       if (_selectedIds.contains(item.id)) {
@@ -334,8 +336,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
     // 2. ストックに追加または更新
     final updatedStocks = List<StockItem>.from(widget.stocks);
+    print('📦 [購入済み処理] 現在のストック数: ${updatedStocks.length}');
     
     for (final item in selectedItems) {
+      print('🔍 [購入済み処理] 処理中: ${item.name}');
+      
       // 同名のストックがあるか確認
       final existingStockIndex = updatedStocks.indexWhere(
         (stock) => stock.name.toLowerCase() == item.name.toLowerCase(),
@@ -343,6 +348,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
       if (existingStockIndex != -1) {
         // 既存のストックを「十分」に更新
+        print('✏️ [購入済み処理] 既存ストック更新: ${item.name}');
         final existingStock = updatedStocks[existingStockIndex];
         updatedStocks[existingStockIndex] = existingStock.copyWith(
           status: StockStatus.sufficient,
@@ -350,6 +356,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         await _supabaseService.updateStock(updatedStocks[existingStockIndex]);
       } else {
         // 新しいストックを作成
+        print('➕ [購入済み処理] 新規ストック作成: ${item.name}');
         final newStock = StockItem(
           id: const Uuid().v4(),
           name: item.name,
@@ -359,13 +366,19 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           memo: item.memo,
         );
         updatedStocks.add(newStock);
+        print('💾 [購入済み処理] Supabaseに保存: ${newStock.id}');
         await _supabaseService.addStock(newStock);
       }
     }
 
+    print('📦 [購入済み処理] 更新後のストック数: ${updatedStocks.length}');
+
     // 3. ローカルストレージとSupabaseに保存
     StorageService.saveStocks(updatedStocks);
+    print('💾 [購入済み処理] ローカルストレージに保存完了');
+    
     widget.onStocksChanged(updatedStocks);
+    print('🔄 [購入済み処理] 親コンポーネントに通知完了');
 
     // 買い物リストも更新
     widget.onShoppingItemsChanged(updatedShoppingItems);
@@ -388,6 +401,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ),
       );
     }
+    
+    print('✅ [購入済み処理] 完了');
   }
 
   /// アイテムを削除

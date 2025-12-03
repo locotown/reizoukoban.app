@@ -177,22 +177,30 @@ class SupabaseService {
   Future<bool> addStock(StockItem stock) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return false;
+      print('📦 [addStock] User ID: $userId, Stock: ${stock.name}');
+      
+      if (userId == null) {
+        print('⚠️ [addStock] User ID is null');
+        return false;
+      }
 
+      print('💾 [addStock] Inserting to Supabase: ${stock.name} (ID: ${stock.id})');
       await _supabase.from('stocks').insert({
+        'id': stock.id,
         'user_id': userId,
         'name': stock.name,
         'icon': stock.icon,
         'category_id': stock.categoryId,
         'status': stock.status.name,
         'memo': stock.memo,
+        'created_at': stock.createdAt.toIso8601String(),
+        'updated_at': stock.updatedAt.toIso8601String(),
       });
 
+      print('✅ [addStock] Successfully added: ${stock.name}');
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ addStock error: $e');
-      }
+      print('❌ [addStock] Error: $e');
       return false;
     }
   }
@@ -201,8 +209,14 @@ class SupabaseService {
   Future<bool> updateStock(StockItem stock) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return false;
+      print('✏️ [updateStock] User ID: $userId, Stock: ${stock.name}');
+      
+      if (userId == null) {
+        print('⚠️ [updateStock] User ID is null');
+        return false;
+      }
 
+      print('💾 [updateStock] Updating Supabase: ${stock.name} → ${stock.status.name}');
       await _supabase.from('stocks').update({
         'name': stock.name,
         'icon': stock.icon,
@@ -212,11 +226,10 @@ class SupabaseService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', stock.id).eq('user_id', userId);
 
+      print('✅ [updateStock] Successfully updated: ${stock.name}');
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ updateStock error: $e');
-      }
+      print('❌ [updateStock] Error: $e');
       return false;
     }
   }
