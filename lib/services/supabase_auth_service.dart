@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../supabase_config.dart';
+import 'storage_service.dart';
 
 /// Supabase Authentication管理サービス
 class SupabaseAuthService {
@@ -85,6 +86,18 @@ class SupabaseAuthService {
   /// ログアウト
   Future<void> signOut() async {
     try {
+      // ローカルストレージをクリア（ユーザーデータ分離のため）
+      try {
+        StorageService.clearUserData();
+        if (kDebugMode) {
+          print('🗑️ ローカルストレージをクリアしました');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ ローカルストレージクリア警告: $e');
+        }
+      }
+
       await supabase.auth.signOut();
       if (kDebugMode) {
         print('✅ ログアウト成功');
