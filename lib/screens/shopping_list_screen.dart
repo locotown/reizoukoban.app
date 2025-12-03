@@ -178,7 +178,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
-  /// 買い物アイテムカード（未購入）
+  /// 買い物アイテムカード（未購入）- モバイル対応レイアウト
   Widget _buildShoppingItemCard(ShoppingItem item) {
     final isSelected = _selectedIds.contains(item.id);
     
@@ -191,100 +191,176 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           color: isSelected ? const Color(0xFF4CAF50) : Colors.transparent,
           width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: ListTile(
-        leading: Checkbox(
-          value: isSelected,
-          onChanged: (value) {
-            setState(() {
-              if (value == true) {
-                _selectedIds.add(item.id);
-              } else {
-                _selectedIds.remove(item.id);
-              }
-            });
-          },
-          activeColor: const Color(0xFF4CAF50),
-        ),
-        title: Row(
-          children: [
-            Text(item.icon, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Row(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          setState(() {
+            if (isSelected) {
+              _selectedIds.remove(item.id);
+            } else {
+              _selectedIds.add(item.id);
+            }
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 上段: チェックボックス + アイコン + 商品名 + 数量 + 削除
+              Row(
                 children: [
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2C3E50),
+                  // チェックボックス
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: isSelected,
+                      onChanged: (value) {
+                        setState(() {
+                          if (value == true) {
+                            _selectedIds.add(item.id);
+                          } else {
+                            _selectedIds.remove(item.id);
+                          }
+                        });
+                      },
+                      activeColor: const Color(0xFF4CAF50),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // 数量表示
-                  Text(
-                    'x${item.quantity}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF3498DB),
+                  // アイコン
+                  Text(item.icon, style: const TextStyle(fontSize: 28)),
+                  const SizedBox(width: 12),
+                  // 商品名 + 数量
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name.isNotEmpty ? item.name : '(名前なし)',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2C3E50),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (item.memo != null && item.memo!.isNotEmpty)
+                          Text(
+                            item.memo!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF95A5A6),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                  // 削除ボタン
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 22),
+                    color: const Color(0xFFE74C3C),
+                    onPressed: () => _deleteItem(item),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // 下段: ソースバッジ + 数量コントロール
+              Row(
+                children: [
+                  const SizedBox(width: 32), // チェックボックス分のスペース
+                  // ソース表示
+                  _buildSourceBadge(item.source),
+                  const Spacer(),
+                  // 数量コントロール
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 減少ボタン
+                        InkWell(
+                          onTap: () => _decreaseQuantity(item),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: item.quantity > 1 
+                                  ? const Color(0xFFE74C3C).withValues(alpha: 0.1)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              Icons.remove,
+                              size: 18,
+                              color: item.quantity > 1 
+                                  ? const Color(0xFFE74C3C)
+                                  : Colors.grey,
+                            ),
+                          ),
+                        ),
+                        // 数量表示
+                        Container(
+                          constraints: const BoxConstraints(minWidth: 40),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${item.quantity}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2C3E50),
+                            ),
+                          ),
+                        ),
+                        // 増加ボタン
+                        InkWell(
+                          onTap: () => _increaseQuantity(item),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              size: 18,
+                              color: Color(0xFF4CAF50),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        subtitle: item.memo != null && item.memo!.isNotEmpty
-            ? Padding(
-                padding: const EdgeInsets.only(top: 4, left: 32),
-                child: Text(
-                  item.memo!,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF95A5A6),
-                  ),
-                ),
-              )
-            : null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 数量減少ボタン
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline, size: 20),
-              color: const Color(0xFF95A5A6),
-              onPressed: () => _decreaseQuantity(item),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            const SizedBox(width: 4),
-            // 数量増加ボタン
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline, size: 20),
-              color: const Color(0xFF4CAF50),
-              onPressed: () => _increaseQuantity(item),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            const SizedBox(width: 8),
-            // ソース表示
-            _buildSourceBadge(item.source),
-            const SizedBox(width: 8),
-            // 削除ボタン
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20),
-              color: const Color(0xFFE74C3C),
-              onPressed: () => _deleteItem(item),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// 購入済みアイテムカード
+  /// 購入済みアイテムカード - モバイル対応レイアウト
   Widget _buildPurchasedItemCard(ShoppingItem item) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -292,48 +368,55 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        leading: const Icon(
-          Icons.check_circle,
-          color: Color(0xFF4CAF50),
-          size: 24,
-        ),
-        title: Row(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
           children: [
-            Text(item.icon, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 8),
+            // チェックマーク
+            const Icon(
+              Icons.check_circle,
+              color: Color(0xFF4CAF50),
+              size: 26,
+            ),
+            const SizedBox(width: 10),
+            // アイコン
+            Text(item.icon, style: const TextStyle(fontSize: 26)),
+            const SizedBox(width: 10),
+            // 商品名 + 数量
             Expanded(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.name,
+                    item.name.isNotEmpty ? item.name : '(名前なし)',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF95A5A6),
                       decoration: TextDecoration.lineThrough,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: 8),
-                  // 数量表示
                   Text(
-                    'x${item.quantity}',
+                    '${item.quantity}個',
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                       color: Color(0xFFBDC3C7),
-                      decoration: TextDecoration.lineThrough,
                     ),
                   ),
                 ],
               ),
             ),
+            // 削除ボタン
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 22),
+              color: const Color(0xFFBDC3C7),
+              onPressed: () => _deleteItem(item),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            ),
           ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, size: 20),
-          color: const Color(0xFFBDC3C7),
-          onPressed: () => _deleteItem(item),
         ),
       ),
     );
@@ -362,7 +445,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
