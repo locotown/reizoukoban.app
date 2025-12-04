@@ -1,167 +1,327 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  <base href="/">
-
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="食品の賞味期限を管理するアプリ - 冷蔵庫番">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#2196F3">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="冷蔵庫番">
-  <link rel="apple-touch-icon" href="./icons/Icon-192.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="./icons/Icon-192.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="./icons/Icon-512.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>冷蔵庫番</title>
-  <link rel="manifest" href="manifest.json">
-
-  <style>
-    /* ローディング画面のスタイル */
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #F5F7FA;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-
-    .loading-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      transition: opacity 0.5s ease-out;
-    }
-
-    .loading-screen.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .app-icon {
-      width: 120px;
-      height: 120px;
-      border-radius: 24px;
-      background: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-      margin-bottom: 24px;
-      animation: pulse 2s infinite;
-    }
-
-    .app-icon img {
-      width: 80px;
-      height: 80px;
-      object-fit: contain;
-    }
-
-    .app-name {
-      color: white;
-      font-size: 28px;
-      font-weight: bold;
-      margin-bottom: 8px;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .app-tagline {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 14px;
-      margin-bottom: 32px;
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    .loading-text {
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 12px;
-      margin-top: 16px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="食品ロスをゼロに。冷蔵庫番で、賢く管理。賞味期限を忘れない。買い物をスマートに。家族みんなで共有できる。">
+    <meta name="keywords" content="冷蔵庫管理,賞味期限,食材管理,買い物リスト,食品ロス削減">
+    <title>冷蔵庫番 - 食品ロスをゼロに。賢く管理。</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="assets/favicon.png">
 </head>
 <body>
-  <!-- ローディング画面 -->
-  <div id="loading-screen" class="loading-screen">
-    <div class="app-icon">
-      <img src="./icons/Icon-192.png" alt="冷蔵庫番" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🧊</text></svg>'">
-    </div>
-    <div class="app-name">冷蔵庫番</div>
-    <div class="app-tagline">食品の賞味期限を簡単管理</div>
-    <div class="loading-spinner"></div>
-    <div class="loading-text">起動中...</div>
-  </div>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="assets/logo.png" alt="冷蔵庫番ロゴ" class="logo-image">
+                    <span class="logo-text">冷蔵庫番</span>
+                </div>
+                <nav class="nav">
+                    <a href="#features" class="nav-link">機能</a>
+                    <a href="#how-it-works" class="nav-link">使い方</a>
+                    <a href="#faq" class="nav-link">FAQ</a>
+                    <a href="app/" class="btn btn-primary">無料で始める</a>
+                </nav>
+                <button class="mobile-menu-toggle" aria-label="メニュー">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
 
-  <script>
-    // ローディング画面を非表示にする関数
-    function hideLoadingScreen() {
-      const loadingScreen = document.getElementById('loading-screen');
-      if (loadingScreen) {
-        loadingScreen.classList.add('fade-out');
-        setTimeout(() => {
-          loadingScreen.style.display = 'none';
-        }, 300);
-      }
-    }
+    <!-- ヒーローセクション -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title">
+                        食品ロスをゼロに。<br>
+                        冷蔵庫番で、賢く管理。
+                    </h1>
+                    <p class="hero-subtitle">
+                        賞味期限を忘れない。買い物をスマートに。<br>
+                        家族みんなで共有できる。
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="app/" class="btn btn-large btn-primary">無料で始める</a>
+                        <a href="app/?demo=true" class="btn btn-large btn-outline">デモを試す</a>
+                    </div>
+                    <p class="hero-note">メールアドレスだけで30秒で登録完了</p>
+                </div>
+                <div class="hero-image">
+                    <div class="app-preview">
+                        <div class="app-icon">🧊</div>
+                        <p class="app-preview-text">iPhone・Android・PCで<br>いつでもどこでも使える</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    // シンプルなローディング表示（パーセント表示を削除）
-    const loadingStates = ['起動中...', '準備中...', 'もうすぐ...'];
-    let stateIndex = 0;
-    const loadingInterval = setInterval(() => {
-      stateIndex = (stateIndex + 1) % loadingStates.length;
-      const loadingText = document.querySelector('.loading-text');
-      if (loadingText) {
-        loadingText.textContent = loadingStates[stateIndex];
-      }
-    }, 1500);
-  </script>
+    <!-- 問題提起セクション -->
+    <section class="pain-points">
+        <div class="container">
+            <h2 class="section-title">こんなお悩みはありませんか？</h2>
+            <div class="pain-grid">
+                <div class="pain-item">
+                    <div class="pain-icon">🥛</div>
+                    <p class="pain-text">冷蔵庫の奥で賞味期限切れの食品を発見</p>
+                </div>
+                <div class="pain-item">
+                    <div class="pain-icon">🛒</div>
+                    <p class="pain-text">買い物で同じものを二重購入</p>
+                </div>
+                <div class="pain-item">
+                    <div class="pain-icon">📝</div>
+                    <p class="pain-text">買い物リストを忘れてスーパーで困る</p>
+                </div>
+                <div class="pain-item">
+                    <div class="pain-icon">👨‍👩‍👧‍👦</div>
+                    <p class="pain-text">家族で冷蔵庫の中身を共有できない</p>
+                </div>
+                <div class="pain-item">
+                    <div class="pain-icon">💰</div>
+                    <p class="pain-text">食品廃棄でお金を無駄にしている</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-  <script src="flutter_bootstrap.js" async></script>
+    <!-- 機能紹介セクション -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">冷蔵庫番が解決します</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">📅</div>
+                    <h3 class="feature-title">賞味期限管理</h3>
+                    <p class="feature-description">
+                        食品の賞味期限を一目で確認。期限切れ前にアラート。カテゴリー別に整理。
+                    </p>
+                    <div class="feature-icon-large">📅</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🛒</div>
+                    <h3 class="feature-title">スマート買い物リスト</h3>
+                    <p class="feature-description">
+                        在庫が少ない食材を自動検出。買い物リストに追加。スーパーでスマホを見るだけ。
+                    </p>
+                    <div class="feature-icon-large">📝</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">☁️</div>
+                    <h3 class="feature-title">クラウド同期</h3>
+                    <p class="feature-description">
+                        家族全員でデータ共有。どのデバイスからでもアクセス。リアルタイム更新。
+                    </p>
+                    <div class="feature-badge">
+                        <span class="badge-text">✓ リアルタイム同期</span>
+                        <span class="badge-text">✓ オフライン対応</span>
+                        <span class="badge-text">✓ 安全なバックアップ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-  <script>
-    // Flutterアプリの読み込み完了を監視
-    window.addEventListener('flutter-first-frame', function() {
-      clearInterval(loadingInterval);
-      hideLoadingScreen();
-    });
+    <!-- 使い方セクション -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">3ステップで簡単スタート</h2>
+            <div class="steps-grid">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">登録</h3>
+                    <p class="step-description">メールアドレスで無料登録</p>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">食材登録</h3>
+                    <p class="step-description">冷蔵庫の食材を登録</p>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">管理開始</h3>
+                    <p class="step-description">賞味期限や買い物を自動管理</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    // フォールバック：5秒後に強制的にローディング画面を非表示（短縮）
-    setTimeout(function() {
-      clearInterval(loadingInterval);
-      hideLoadingScreen();
-    }, 5000);
-  </script>
+    <!-- ベネフィットセクション -->
+    <section class="benefits">
+        <div class="container">
+            <h2 class="section-title">冷蔵庫番を使うと...</h2>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <div class="benefit-icon">💰</div>
+                    <h3 class="benefit-title">食費を節約</h3>
+                    <p class="benefit-description">食品ロスを減らして年間数万円節約</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon">🌍</div>
+                    <h3 class="benefit-title">環境にやさしい</h3>
+                    <p class="benefit-description">食品廃棄を減らしてSDGsに貢献</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon">⏰</div>
+                    <h3 class="benefit-title">時間を節約</h3>
+                    <p class="benefit-description">買い物の時間を短縮</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon">😊</div>
+                    <h3 class="benefit-title">ストレス軽減</h3>
+                    <p class="benefit-description">賞味期限を気にする必要なし</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 対応デバイスセクション -->
+    <section class="compatibility">
+        <div class="container">
+            <h2 class="section-title">どこでも使える</h2>
+            <div class="devices-grid">
+                <div class="device-item">
+                    <div class="device-icon">📱</div>
+                    <h3 class="device-title">スマートフォン</h3>
+                    <p class="device-description">iPhone / Android</p>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon">💻</div>
+                    <h3 class="device-title">パソコン</h3>
+                    <p class="device-description">Windows / Mac / Linux</p>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon">🌐</div>
+                    <h3 class="device-title">Webブラウザ</h3>
+                    <p class="device-description">どのブラウザでも</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- セキュリティセクション -->
+    <section class="security">
+        <div class="container">
+            <h2 class="section-title">安心・安全のセキュリティ</h2>
+            <div class="security-grid">
+                <div class="security-item">
+                    <div class="security-icon">🔒</div>
+                    <h3 class="security-title">データ暗号化</h3>
+                    <p class="security-description">すべてのデータを暗号化</p>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon">🛡️</div>
+                    <h3 class="security-title">プライバシー保護</h3>
+                    <p class="security-description">個人情報は厳重に管理</p>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon">☁️</div>
+                    <h3 class="security-title">Supabase</h3>
+                    <p class="security-description">信頼性の高いクラウドインフラ</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 料金セクション -->
+    <section class="pricing">
+        <div class="container">
+            <h2 class="section-title">完全無料で始められます</h2>
+            <div class="pricing-card">
+                <h3 class="pricing-title">無料プラン</h3>
+                <div class="pricing-features">
+                    <div class="pricing-feature">✅ すべての基本機能が使える</div>
+                    <div class="pricing-feature">✅ 登録ユーザー数無制限</div>
+                    <div class="pricing-feature">✅ クラウド同期無制限</div>
+                    <div class="pricing-feature">✅ 広告なし</div>
+                </div>
+                <a href="app/" class="btn btn-large btn-primary">今すぐ始める</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQセクション -->
+    <section id="faq" class="faq">
+        <div class="container">
+            <h2 class="section-title">よくある質問</h2>
+            <div class="faq-list">
+                <div class="faq-item">
+                    <h3 class="faq-question">本当に無料ですか？</h3>
+                    <p class="faq-answer">はい、基本機能はすべて無料でご利用いただけます。</p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">家族で共有できますか？</h3>
+                    <p class="faq-answer">はい、同じアカウントで複数デバイスから利用可能です。</p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">オフラインでも使えますか？</h3>
+                    <p class="faq-answer">はい、オフラインでも利用でき、ネット接続時に自動同期されます。</p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">データのバックアップは？</h3>
+                    <p class="faq-answer">すべてのデータはクラウドに自動バックアップされます。</p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">スマホアプリはありますか？</h3>
+                    <p class="faq-answer">現在はWebアプリとして提供していますが、iPhoneのホーム画面に追加してアプリのように使えます。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTAセクション -->
+    <section class="cta">
+        <div class="container">
+            <h2 class="cta-title">今すぐ冷蔵庫番を始めよう</h2>
+            <p class="cta-subtitle">メールアドレスだけで30秒で登録完了</p>
+            <div class="cta-buttons">
+                <a href="app/" class="btn btn-large btn-primary">無料で始める</a>
+                <a href="app/?demo=true" class="btn btn-large btn-outline">デモを試す</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <img src="../web/icons/Icon-192.png" alt="冷蔵庫番" class="footer-logo-image">
+                        <span class="footer-logo-text">冷蔵庫番</span>
+                    </div>
+                    <p class="footer-description">食材とストックの管理</p>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">アプリ</h4>
+                    <ul class="footer-links">
+                        <li><a href="app/">アプリを使う</a></li>
+                        <li><a href="app/?demo=true">デモを試す</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">情報</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features">機能</a></li>
+                        <li><a href="#how-it-works">使い方</a></li>
+                        <li><a href="#faq">よくある質問</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 冷蔵庫番. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
 </body>
 </html>
-<!-- Rebuild trigger: 1764771878 -->

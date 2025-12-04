@@ -3,9 +3,19 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false,
+  "routes": [
+    {
+      "src": "/app/(.*)",
+      "dest": "/app/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/app/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
@@ -18,6 +28,15 @@
         {
           "key": "Content-Security-Policy",
           "value": "frame-ancestors *"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
         }
       ]
     }

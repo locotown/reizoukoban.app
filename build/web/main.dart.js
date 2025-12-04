@@ -96284,7 +96284,7 @@ A.axA.prototype={
 $1(a){return B.Vy},
 $S:634}
 A.axH.prototype={
-$0(){window.location.href="https://reizoukoban-app.vercel.app/"},
+$0(){window.location.href="https://reizoukoban.ideandtity.com/"},
 $S:0}
 A.Ef.prototype={
 aa(){return new A.IS(new A.tb($.jt()),A.b([],t.s))},

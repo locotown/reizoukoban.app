@@ -427,7 +427,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         // TOPページに遷移
                         if (kIsWeb) {
-                          html.window.location.href = 'https://reizoukoban-app.vercel.app/';
+                          html.window.location.href = 'https://reizoukoban.ideandtity.com/';
                         }
                       },
                       icon: const Icon(Icons.home_outlined, size: 18),
