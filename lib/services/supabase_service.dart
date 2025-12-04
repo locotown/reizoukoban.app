@@ -51,12 +51,13 @@ class SupabaseService {
       if (userId == null) return false;
 
       await _supabase.from('foods').insert({
+        'id': food.id,
         'user_id': userId,
         'name': food.name,
         'icon': food.icon,
-        'expiry_date': food.expiryDate?.toIso8601String(),
-        'category': food.category,
-        'memo': food.memo,
+        'category_id': food.categoryId,
+        'expiration_date': food.expirationDate.toIso8601String(),
+        'created_at': food.createdAt.toIso8601String(),
       });
 
       return true;
@@ -77,10 +78,8 @@ class SupabaseService {
       await _supabase.from('foods').update({
         'name': food.name,
         'icon': food.icon,
-        'expiry_date': food.expiryDate?.toIso8601String(),
-        'category': food.category,
-        'memo': food.memo,
-        'updated_at': DateTime.now().toIso8601String(),
+        'category_id': food.categoryId,
+        'expiration_date': food.expirationDate.toIso8601String(),
       }).eq('id', food.id).eq('user_id', userId);
 
       return true;
@@ -424,7 +423,7 @@ class SupabaseService {
         'quantity': item.quantity,
         'is_purchased': item.isPurchased,
         'source': item.source.name,
-        'source_id': item.sourceId,
+        'source_id': item.sourceId, // nullの場合はnullとして保存
         'memo': item.memo,
         'created_at': item.createdAt.toIso8601String(),
         'updated_at': item.updatedAt.toIso8601String(),
@@ -450,7 +449,7 @@ class SupabaseService {
         'quantity': item.quantity,
         'is_purchased': item.isPurchased,
         'source': item.source.name,
-        'source_id': item.sourceId,
+        'source_id': item.sourceId, // nullの場合はnullとして保存
         'memo': item.memo,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', item.id).eq('user_id', userId);
