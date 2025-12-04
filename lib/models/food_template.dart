@@ -19,18 +19,18 @@ class FoodTemplate {
     'id': id,
     'name': name,
     'icon': icon,
-    'categoryId': categoryId,
-    'subCategoryId': subCategoryId,
-    'defaultDays': defaultDays,
+    'category_id': categoryId,  // スネークケースに変更（バックエンドAPI対応）
+    'sub_category_id': subCategoryId,  // スネークケースに変更
+    'default_days': defaultDays,  // スネークケースに変更
   };
 
   factory FoodTemplate.fromJson(Map<String, dynamic> json) => FoodTemplate(
-    id: json['id'],
-    name: json['name'],
-    icon: json['icon'],
-    categoryId: json['categoryId'],
-    subCategoryId: json['subCategoryId'] ?? 'other',
-    defaultDays: json['defaultDays'],
+    id: json['id'] ?? json['_id'] ?? '',
+    name: json['name'] ?? '',
+    icon: json['icon'] ?? '🍽️',
+    categoryId: json['category_id'] ?? json['categoryId'] ?? '',  // 両方対応
+    subCategoryId: json['sub_category_id'] ?? json['subCategoryId'] ?? 'other',  // 両方対応
+    defaultDays: json['default_days'] ?? json['defaultDays'] ?? 7,  // 両方対応
   );
 
   /// Supabaseのデータからオブジェクトを作成

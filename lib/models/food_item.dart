@@ -41,18 +41,18 @@ class FoodItem {
     'id': id,
     'name': name,
     'icon': icon,
-    'categoryId': categoryId,
-    'expirationDate': expirationDate.toIso8601String(),
-    'createdAt': createdAt.toIso8601String(),
+    'category_id': categoryId,  // スネークケースに変更（バックエンドAPI対応）
+    'expiration_date': expirationDate.toIso8601String(),  // スネークケースに変更
+    'created_at': createdAt.toIso8601String(),  // スネークケースに変更
   };
 
   factory FoodItem.fromJson(Map<String, dynamic> json) => FoodItem(
-    id: json['id'],
-    name: json['name'],
+    id: json['id'] ?? json['_id'] ?? '',
+    name: json['name'] ?? '',
     icon: json['icon'] ?? '🍽️',
-    categoryId: json['categoryId'],
-    expirationDate: DateTime.parse(json['expirationDate']),
-    createdAt: DateTime.parse(json['createdAt']),
+    categoryId: json['category_id'] ?? json['categoryId'] ?? '',  // 両方対応
+    expirationDate: DateTime.parse(json['expiration_date'] ?? json['expirationDate'] ?? DateTime.now().toIso8601String()),  // 両方対応
+    createdAt: DateTime.parse(json['created_at'] ?? json['createdAt'] ?? DateTime.now().toIso8601String()),  // 両方対応
   );
 
   /// Supabaseのデータからオブジェクトを作成
