@@ -1,27 +1,22 @@
 /* ============================================
-   冷蔵庫番 - ランディングページ CSS
-   デザイン: モダン・ミニマル (Apple/Notionスタイル)
+   冷蔵庫番 - プロフェッショナルLP CSS
    ============================================ */
 
-/* ========== 基本設定 ========== */
 :root {
-  --primary-color: #2196F3;
+  --primary: #2196F3;
   --primary-dark: #1976D2;
   --primary-light: #BBDEFB;
+  --secondary: #FF9800;
   --text-primary: #212121;
   --text-secondary: #757575;
-  --bg-light: #FAFAFA;
+  --bg-light: #F5F7FA;
   --bg-white: #FFFFFF;
-  --border-color: #E0E0E0;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
-  --transition: all 0.3s ease;
-  --max-width: 1200px;
-  --spacing-xs: 0.5rem;
-  --spacing-sm: 1rem;
-  --spacing-md: 2rem;
-  --spacing-lg: 4rem;
-  --spacing-xl: 6rem;
+  --border: #E0E0E0;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.15);
+  --radius: 12px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -35,799 +30,520 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: var(--text-primary);
   line-height: 1.6;
-  background-color: var(--bg-white);
+  background: var(--bg-white);
 }
 
 .container {
-  max-width: var(--max-width);
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 var(--spacing-md);
+  padding: 0 24px;
 }
 
-/* ========== ヘッダー ========== */
+/* ========== Header ========== */
 .header {
-  background-color: var(--bg-white);
-  box-shadow: var(--shadow);
+  background: var(--bg-white);
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 1000;
-  transition: var(--transition);
-}
-
-.header.scrolled {
-  box-shadow: var(--shadow-hover);
+  backdrop-filter: blur(10px);
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-sm) 0;
+  height: 70px;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  gap: 8px;
   text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.logo-icon {
+  font-size: 28px;
 }
 
 .nav {
   display: flex;
-  gap: var(--spacing-md);
+  align-items: center;
+  gap: 32px;
 }
 
 .nav a {
-  color: var(--text-secondary);
   text-decoration: none;
+  color: var(--text-secondary);
   font-weight: 500;
   transition: var(--transition);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
 }
 
-.nav a:hover {
-  color: var(--primary-color);
-  background-color: var(--bg-light);
+.nav a:not(.btn-primary):hover {
+  color: var(--primary);
 }
 
-.header-cta {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-/* モバイルメニュー */
-.mobile-menu-btn {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--text-primary);
-}
-
-@media (max-width: 768px) {
-  .nav {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background-color: var(--bg-white);
-    flex-direction: column;
-    padding: var(--spacing-md);
-    box-shadow: var(--shadow);
-  }
-
-  .nav.active {
-    display: flex;
-  }
-
-  .mobile-menu-btn {
-    display: block;
-  }
-
-  .header-cta {
-    display: none;
-  }
-}
-
-/* ========== ボタン ========== */
-.btn {
+/* ========== Buttons ========== */
+.btn-primary, .btn-secondary, .btn-white, .btn-outline-white {
   display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius);
   text-decoration: none;
   font-weight: 600;
+  font-size: 16px;
   transition: var(--transition);
+  border: 2px solid transparent;
   cursor: pointer;
-  border: none;
-  font-size: 1rem;
-  white-space: nowrap;
+}
+
+.btn-large {
+  padding: 16px 32px;
+  font-size: 18px;
 }
 
 .btn-primary {
-  background-color: var(--primary-color);
+  background: var(--primary);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-dark);
+  background: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--shadow-md);
 }
 
-.btn-outline {
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color);
+.btn-secondary {
+  background: white;
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
-.btn-outline:hover {
-  background-color: var(--primary-light);
+.btn-secondary:hover {
+  background: var(--primary-light);
 }
 
-.btn-large {
-  padding: 1rem 2rem;
-  font-size: 1.125rem;
+.btn-white {
+  background: white;
+  color: var(--primary);
 }
 
-/* ========== セクション共通 ========== */
-section {
-  padding: var(--spacing-xl) 0;
+.btn-white:hover {
+  background: var(--bg-light);
+  transform: translateY(-2px);
+}
+
+.btn-outline-white {
+  background: transparent;
+  color: white;
+  border-color: white;
+}
+
+.btn-outline-white:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* ========== Hero Section ========== */
+.hero {
+  padding: 80px 0;
+  background: linear-gradient(135deg, var(--bg-light) 0%, white 100%);
+}
+
+.hero-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-left h1 {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.hero-subtitle {
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  line-height: 1.8;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.hero-note {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.hero-visual {
+  text-align: center;
+}
+
+.device-preview {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: 24px;
+  padding: 48px;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 24px;
+}
+
+.device-screen {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+}
+
+.app-icon-large {
+  font-size: 120px;
+  margin-bottom: 16px;
+}
+
+.device-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.feature-badges {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========== Problems Section ========== */
+.problems {
+  padding: 80px 0;
+  background: white;
 }
 
 .section-title {
-  font-size: 2.5rem;
+  font-size: 36px;
   font-weight: 700;
   text-align: center;
-  margin-bottom: var(--spacing-md);
-  color: var(--text-primary);
+  margin-bottom: 16px;
 }
 
 .section-subtitle {
-  font-size: 1.125rem;
+  font-size: 18px;
   color: var(--text-secondary);
   text-align: center;
-  margin-bottom: var(--spacing-lg);
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  margin-bottom: 48px;
 }
 
-/* ========== ヒーローセクション ========== */
-.hero {
-  background: linear-gradient(135deg, var(--primary-light) 0%, var(--bg-white) 100%);
-  padding: var(--spacing-xl) 0;
-  text-align: center;
-}
-
-.hero h1 {
-  font-size: 3rem;
-  font-weight: 800;
-  margin-bottom: var(--spacing-sm);
-  line-height: 1.2;
-}
-
-.hero p {
-  font-size: 1.25rem;
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-md);
-}
-
-.hero-cta {
-  display: flex;
-  gap: var(--spacing-sm);
-  justify-content: center;
-  margin-bottom: var(--spacing-lg);
-}
-
-.hero-image {
-  max-width: 800px;
-  margin: 0 auto;
-  box-shadow: var(--shadow-hover);
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.hero-image img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-@media (max-width: 768px) {
-  .hero h1 {
-    font-size: 2rem;
-  }
-
-  .hero p {
-    font-size: 1rem;
-  }
-
-  .hero-cta {
-    flex-direction: column;
-    align-items: center;
-  }
-}
-
-/* ========== 課題セクション ========== */
-.pain-points {
-  background-color: var(--bg-light);
-}
-
-.pain-grid {
+.problems-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
 }
 
-.pain-card {
-  background-color: var(--bg-white);
-  padding: var(--spacing-md);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+.problem-card {
+  background: var(--bg-light);
+  padding: 32px;
+  border-radius: var(--radius);
+  text-align: center;
   transition: var(--transition);
 }
 
-.pain-card:hover {
-  box-shadow: var(--shadow-hover);
+.problem-card:hover {
   transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
-.pain-card .icon {
-  font-size: 2.5rem;
-  margin-bottom: var(--spacing-sm);
+.problem-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
 }
 
-.pain-card h3 {
-  font-size: 1.25rem;
-  margin-bottom: var(--spacing-xs);
-  color: var(--text-primary);
+.problem-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
 }
 
-.pain-card p {
+.problem-card p {
   color: var(--text-secondary);
   line-height: 1.6;
 }
 
-/* ========== ソリューションセクション ========== */
+/* ========== Features Section ========== */
+.features {
+  padding: 80px 0;
+  background: var(--bg-light);
+}
+
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
 }
 
 .feature-card {
-  background-color: var(--bg-white);
-  padding: var(--spacing-md);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius);
   text-align: center;
   transition: var(--transition);
+  box-shadow: var(--shadow-sm);
 }
 
 .feature-card:hover {
-  box-shadow: var(--shadow-hover);
   transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
-.feature-card .icon {
-  font-size: 3rem;
-  margin-bottom: var(--spacing-sm);
+.feature-icon {
+  font-size: 72px;
+  margin-bottom: 20px;
 }
 
 .feature-card h3 {
-  font-size: 1.25rem;
-  margin-bottom: var(--spacing-xs);
-  color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
 }
 
 .feature-card p {
   color: var(--text-secondary);
+  line-height: 1.7;
 }
 
-/* ========== 使い方セクション ========== */
+/* ========== How It Works Section ========== */
 .how-it-works {
-  background-color: var(--bg-light);
+  padding: 80px 0;
+  background: white;
 }
 
-.steps {
+.steps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
 }
 
-.step {
+.step-card {
   text-align: center;
-  position: relative;
+  padding: 32px;
 }
 
 .step-number {
-  width: 60px;
-  height: 60px;
-  background-color: var(--primary-color);
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 36px;
   font-weight: 700;
-  margin: 0 auto var(--spacing-sm);
+  margin: 0 auto 24px;
+  box-shadow: var(--shadow-md);
 }
 
-.step h3 {
-  font-size: 1.25rem;
-  margin-bottom: var(--spacing-xs);
-}
-
-.step p {
-  color: var(--text-secondary);
-}
-
-/* ========== メリットセクション ========== */
-.benefits-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-md);
-}
-
-.benefit-card {
-  display: flex;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  background-color: var(--bg-white);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  transition: var(--transition);
-}
-
-.benefit-card:hover {
-  box-shadow: var(--shadow-hover);
-}
-
-.benefit-card .icon {
-  font-size: 2rem;
-  color: var(--primary-color);
-  flex-shrink: 0;
-}
-
-.benefit-card h3 {
-  font-size: 1.125rem;
-  margin-bottom: 0.25rem;
-}
-
-.benefit-card p {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-}
-
-/* ========== デバイス対応セクション ========== */
-.devices {
-  background-color: var(--bg-light);
-  text-align: center;
-}
-
-.device-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.device-card {
-  padding: var(--spacing-md);
-  background-color: var(--bg-white);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-
-.device-card .icon {
-  font-size: 3rem;
-  margin-bottom: var(--spacing-sm);
-}
-
-.device-card h3 {
-  font-size: 1.125rem;
-  margin-bottom: 0.5rem;
-}
-
-.device-card p {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-}
-
-/* ========== セキュリティセクション ========== */
-.security-content {
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.security-features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-}
-
-.security-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: var(--spacing-sm);
-  background-color: var(--bg-light);
-  border-radius: 8px;
-}
-
-.security-item .icon {
-  color: var(--primary-color);
-  font-size: 1.5rem;
-}
-
-/* ========== 料金プランセクション ========== */
-.pricing {
-  background-color: var(--bg-light);
-}
-
-.pricing-card {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: var(--spacing-lg);
-  background-color: var(--bg-white);
-  border-radius: 16px;
-  box-shadow: var(--shadow-hover);
-  text-align: center;
-}
-
-.pricing-card .plan-name {
-  font-size: 1.5rem;
+.step-card h3 {
+  font-size: 22px;
   font-weight: 700;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 12px;
 }
 
-.pricing-card .price {
-  font-size: 3rem;
-  font-weight: 800;
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-sm);
-}
-
-.pricing-card .features {
-  list-style: none;
-  margin-bottom: var(--spacing-md);
-  text-align: left;
-}
-
-.pricing-card .features li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pricing-card .features li::before {
-  content: "✓";
-  color: var(--primary-color);
-  font-weight: 700;
-}
-
-/* ========== FAQセクション ========== */
-.faq-list {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.faq-item {
-  background-color: var(--bg-white);
-  border-radius: 8px;
-  margin-bottom: var(--spacing-sm);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-
-.faq-question {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--bg-white);
-  border: none;
-  text-align: left;
-  font-size: 1.125rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: var(--transition);
-}
-
-.faq-question:hover {
-  background-color: var(--bg-light);
-}
-
-.faq-question::after {
-  content: "+";
-  font-size: 1.5rem;
-  transition: var(--transition);
-}
-
-.faq-question.active::after {
-  content: "−";
-}
-
-.faq-answer {
-  padding: 0 var(--spacing-md);
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, padding 0.3s ease;
+.step-card p {
   color: var(--text-secondary);
-}
-
-.faq-answer.active {
-  padding: var(--spacing-sm) var(--spacing-md);
-  max-height: 500px;
-}
-
-/* ========== CTAセクション ========== */
-.cta {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-  color: white;
-  text-align: center;
-  padding: var(--spacing-xl) var(--spacing-md);
-}
-
-.cta h2 {
-  font-size: 2.5rem;
-  margin-bottom: var(--spacing-sm);
-}
-
-.cta p {
-  font-size: 1.25rem;
-  margin-bottom: var(--spacing-md);
-  opacity: 0.95;
-}
-
-.cta .btn-primary {
-  background-color: white;
-  color: var(--primary-color);
-}
-
-.cta .btn-primary:hover {
-  background-color: var(--bg-light);
-}
-
-/* ========== フッター ========== */
-.footer {
-  background-color: var(--text-primary);
-  color: white;
-  padding: var(--spacing-lg) 0 var(--spacing-md);
-}
-
-.footer-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-}
-
-.footer-section h4 {
-  margin-bottom: var(--spacing-sm);
-  font-size: 1.125rem;
-}
-
-.footer-section ul {
-  list-style: none;
-}
-
-.footer-section ul li {
-  margin-bottom: 0.5rem;
-}
-
-.footer-section a {
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  transition: var(--transition);
-}
-
-.footer-section a:hover {
-  color: white;
-}
-
-.footer-bottom {
-  text-align: center;
-  padding-top: var(--spacing-md);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* ========== アニメーション ========== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-in {
-  animation: fadeIn 0.6s ease-out;
-}
-
-/* スクロールアニメーション */
-.scroll-reveal {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.scroll-reveal.revealed {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ========== ユーティリティクラス ========== */
-.text-center {
-  text-align: center;
-}
-
-.mt-lg {
-  margin-top: var(--spacing-lg);
-}
-
-.mb-lg {
-  margin-bottom: var(--spacing-lg);
-}
-
-/* ========== レスポンシブ対応 ========== */
-@media (max-width: 768px) {
-  :root {
-    --spacing-xl: 3rem;
-    --spacing-lg: 2rem;
-  }
-
-  .section-title {
-    font-size: 2rem;
-  }
-
-  .pricing-card {
-    padding: var(--spacing-md);
-  }
-
-  .cta h2 {
-    font-size: 1.75rem;
-  }
-
-  .cta p {
-    font-size: 1rem;
-  }
-}
-
-/* ========== 新しいヒーローセクションスタイル ========== */
-.hero-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
-  align-items: center;
-  min-height: 500px;
-}
-
-.hero-text {
-  max-width: 600px;
-}
-
-.hero-title {
-  font-size: 3rem;
-  font-weight: 800;
-  margin-bottom: var(--spacing-md);
-  line-height: 1.2;
-  color: var(--text-primary);
-}
-
-.hero-subtitle {
-  font-size: 1.25rem;
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-md);
   line-height: 1.6;
 }
 
-.hero-buttons {
-  display: flex;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
+/* ========== Devices Section ========== */
+.devices {
+  padding: 80px 0;
+  background: var(--bg-light);
 }
 
-.hero-note {
-  font-size: 0.875rem;
+.devices-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.device-item {
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.device-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.device-item h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.device-item p {
   color: var(--text-secondary);
 }
 
-.app-preview {
-  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
-  border-radius: 24px;
-  padding: var(--spacing-xl);
-  text-align: center;
-  box-shadow: var(--shadow-hover);
+/* ========== Pricing Section ========== */
+.pricing {
+  padding: 80px 0;
+  background: white;
 }
 
-.app-icon {
-  font-size: 8rem;
-  margin-bottom: var(--spacing-md);
-}
-
-.app-preview-text {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: white;
-  line-height: 1.8;
-}
-
-.feature-icon-large {
-  font-size: 6rem;
-  text-align: center;
-  padding: var(--spacing-lg);
-  background: linear-gradient(135deg, var(--primary-light) 0%, white 100%);
+.pricing-card {
+  max-width: 500px;
+  margin: 0 auto;
+  background: white;
+  padding: 48px;
   border-radius: 16px;
-  margin: var(--spacing-md) auto;
-  max-width: 200px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid var(--primary);
 }
 
-.logo-image {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
-.logo-text {
-  font-size: 1.5rem;
+.pricing-card h3 {
+  font-size: 24px;
   font-weight: 700;
+  margin-bottom: 16px;
 }
 
-/* レスポンシブ対応 */
+.price {
+  font-size: 56px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.price-note {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.features-list {
+  list-style: none;
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.features-list li {
+  padding: 12px 0;
+  font-size: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.features-list li:last-child {
+  border-bottom: none;
+}
+
+/* ========== CTA Section ========== */
+.cta {
+  padding: 80px 0;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  text-align: center;
+}
+
+.cta h2 {
+  font-size: 40px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.cta p {
+  font-size: 20px;
+  margin-bottom: 32px;
+  opacity: 0.95;
+}
+
+.cta-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* ========== Footer ========== */
+.footer {
+  padding: 40px 0;
+  background: var(--text-primary);
+  color: white;
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* ========== Responsive Design ========== */
 @media (max-width: 768px) {
   .hero-content {
     grid-template-columns: 1fr;
-    gap: var(--spacing-md);
-    min-height: auto;
+    gap: 40px;
   }
 
-  .hero-title {
-    font-size: 2rem;
+  .hero-left h1 {
+    font-size: 32px;
   }
 
   .hero-subtitle {
-    font-size: 1rem;
+    font-size: 16px;
   }
 
   .hero-buttons {
     flex-direction: column;
   }
 
-  .app-preview {
-    padding: var(--spacing-md);
+  .problems-grid,
+  .features-grid,
+  .steps-grid,
+  .devices-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 
-  .app-icon {
-    font-size: 5rem;
+  .section-title {
+    font-size: 28px;
   }
 
-  .app-preview-text {
-    font-size: 1rem;
+  .section-subtitle {
+    font-size: 16px;
   }
 
-  .feature-icon-large {
-    font-size: 4rem;
-    padding: var(--spacing-md);
+  .nav {
+    display: none;
+  }
+
+  .cta h2 {
+    font-size: 28px;
+  }
+
+  .cta-buttons {
+    flex-direction: column;
+    align-items: center;
   }
 }
