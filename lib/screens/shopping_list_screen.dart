@@ -553,6 +553,27 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       }
     }
 
+    // 手動追加のアイテム → 食材リストに新規追加（数量分）
+    for (final item in manualItems) {
+      print('✍️ [購入済み処理] 手動追加アイテム処理中: ${item.name} x ${item.quantity}');
+      
+      // 数量分だけ新しい食材を追加
+      for (int i = 0; i < item.quantity; i++) {
+        // 新しい食材を作成（賞味期限は1週間後をデフォルト）
+        final newFood = FoodItem(
+          id: const Uuid().v4(),
+          name: item.name,
+          icon: item.icon,
+          categoryId: _mapShoppingCategoryToFoodCategory(item.categoryId),
+          expirationDate: DateTime.now().add(const Duration(days: 7)),
+        );
+        updatedFoods.add(newFood);
+        await _supabaseService.addFood(newFood);
+        foodsAddedCount++;
+        print('➕ [購入済み処理] 手動追加アイテムを食材に追加 ${i + 1}/${item.quantity}: ${newFood.name} (カテゴリ: ${newFood.categoryId})');
+      }
+    }
+
     // ストックが更新された場合のみ保存
     if (stocksAddedCount > 0) {
       StorageService.saveStocks(updatedStocks);
@@ -607,8 +628,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   /// 買い物リストのカテゴリIDを食材カテゴリIDにマッピング
   String _mapShoppingCategoryToFoodCategory(String categoryId) {
     // 食材カテゴリ: fridge, freezer, room
-    // ストックカテゴリ: daily, bath, cleaning, food_stock, other
+    // ストックカテゴリ: daily, bath, cleaning, food_stock, medicine, other
     switch (categoryId) {
+      // 既に食材カテゴリの場合はそのまま返す
+      case 'fridge':
+        return 'fridge';  // 冷蔵 → 冷蔵
+      case 'freezer':
+        return 'freezer'; // 冷凍 → 冷凍
+      case 'room':
+        return 'room';    // 常温 → 常温
+      
+      // ストックカテゴリから食材カテゴリへのマッピング
       case 'food_stock':
       case '食品':
         return 'fridge';  // 食品ストック → 冷蔵
