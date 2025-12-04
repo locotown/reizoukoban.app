@@ -48,23 +48,44 @@ class SupabaseService {
   Future<bool> addFood(FoodItem food) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return false;
-
-      await _supabase.from('foods').insert({
-        'id': food.id,
-        'user_id': userId,
-        'name': food.name,
-        'icon': food.icon,
-        'category_id': food.categoryId,
-        'expiration_date': food.expirationDate.toIso8601String(),
-        'created_at': food.createdAt.toIso8601String(),
-      });
-
-      return true;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ addFood error: $e');
+      if (userId == null) {
+        print('❌ addFood: User ID is null');
+        return false;
       }
+
+      print('📝 [addFood] Inserting food: ${food.name}, category: ${food.categoryId}');
+      
+      // まず新しいフィールド名で試行
+      try {
+        await _supabase.from('foods').insert({
+          'id': food.id,
+          'user_id': userId,
+          'name': food.name,
+          'icon': food.icon,
+          'category_id': food.categoryId,
+          'expiration_date': food.expirationDate.toIso8601String(),
+          'created_at': food.createdAt.toIso8601String(),
+        });
+        print('✅ [addFood] Success with new field names');
+        return true;
+      } catch (newFieldError) {
+        print('⚠️ [addFood] New field names failed, trying old field names: $newFieldError');
+        
+        // 古いフィールド名で再試行（後方互換性）
+        await _supabase.from('foods').insert({
+          'id': food.id,
+          'user_id': userId,
+          'name': food.name,
+          'icon': food.icon,
+          'category': food.categoryId,
+          'expiry_date': food.expirationDate.toIso8601String(),
+          'created_at': food.createdAt.toIso8601String(),
+        });
+        print('✅ [addFood] Success with old field names');
+        return true;
+      }
+    } catch (e) {
+      print('❌ addFood error: $e');
       return false;
     }
   }
@@ -75,18 +96,33 @@ class SupabaseService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return false;
 
-      await _supabase.from('foods').update({
-        'name': food.name,
-        'icon': food.icon,
-        'category_id': food.categoryId,
-        'expiration_date': food.expirationDate.toIso8601String(),
-      }).eq('id', food.id).eq('user_id', userId);
-
-      return true;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ updateFood error: $e');
+      print('📝 [updateFood] Updating food: ${food.name}, category: ${food.categoryId}');
+      
+      // まず新しいフィールド名で試行
+      try {
+        await _supabase.from('foods').update({
+          'name': food.name,
+          'icon': food.icon,
+          'category_id': food.categoryId,
+          'expiration_date': food.expirationDate.toIso8601String(),
+        }).eq('id', food.id).eq('user_id', userId);
+        print('✅ [updateFood] Success with new field names');
+        return true;
+      } catch (newFieldError) {
+        print('⚠️ [updateFood] New field names failed, trying old field names: $newFieldError');
+        
+        // 古いフィールド名で再試行（後方互換性）
+        await _supabase.from('foods').update({
+          'name': food.name,
+          'icon': food.icon,
+          'category': food.categoryId,
+          'expiry_date': food.expirationDate.toIso8601String(),
+        }).eq('id', food.id).eq('user_id', userId);
+        print('✅ [updateFood] Success with old field names');
+        return true;
       }
+    } catch (e) {
+      print('❌ updateFood error: $e');
       return false;
     }
   }
