@@ -1,6 +1,6 @@
 {
-  "buildCommand": "flutter build web --release --base-href=/app/",
-  "outputDirectory": "build/web",
+  "buildCommand": "echo 'Using pre-built files from public directory'",
+  "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
